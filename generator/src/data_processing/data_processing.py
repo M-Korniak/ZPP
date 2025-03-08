@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 import os
+import matplotlib.pyplot as plt
 
 import src.utils.utils as utils
 import src.visualizer.visualizer as visualizer
@@ -32,11 +33,14 @@ def load_experiment_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6),
     df = utils.unpack_and_read('../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz')
     if not os.path.exists("../../data/experiments"):
         os.makedirs("../../data/experiments")
+    # print("fxd")
+    if not os.path.exists("../../data/tensors_to_load"):
+        os.makedirs("../../data/tensors_to_load")
 
     df['ERKKTR_ratio'] = np.clip(df['ERKKTR_ratio'], 0.4, 2.7)
     df = df[df['Exp_ID'].isin(experiments)]
 
-    for experiment in experiments:
+    for experiment in experiments[5:6]:
         df_experiment = df[df['Exp_ID'] == experiment]
         fields_of_view = np.sort(df_experiment['Image_Metadata_Site'].unique())
         experiments_tensor = torch.zeros(1, 258, 3, 256, 256, device=DEVICE, dtype=torch.float16)
@@ -109,6 +113,19 @@ class TensorDataset(Dataset):
 
         return item
 
+def imshow(img):
+    npimg = img.numpy()  # Konwersja na numpy array
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))  # Przygotowanie obrazu do zapisania
+    plt.axis('off')  # Wyłączenie osi
+    plt.savefig("xdddd")  # Zapisanie obrazu do pliku
+    plt.close()  # Zamknięcie figury, aby nie była wyświetlana
+    img = transformations.unnormalize_image(img)
+    npimg = img.numpy()  # Konwersja na numpy array
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))  # Przygotowanie obrazu do zapisania
+    plt.axis('off')  # Wyłączenie osi
+    plt.savefig("unormalized")  # Zapisanie obrazu do pliku
+    plt.close()  # Zamknięcie figury, aby nie była wyświetlana
+
 
 def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
                    load_to_ram: bool = False,
@@ -142,6 +159,16 @@ def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
     torch.manual_seed(seed)
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
+    # Wyświetl przykładowy obrazek z treningowego zbioru danych
+    # print()
+    # tutaj one są w postaci jeszcze nie znormalizowanej
+    # example_images = train_dataset[0]  # Pobierz pierwszą partię obrazów (batch)
+    
+    # Wybieramy pierwszy obrazek z batcha
+    # example_image = example_images[0]  # Indeks 0 dla pierwszego obrazka w batchu
+    # print(example_image.shape)
+    # imshow(example_image)  # Wyświetl obrazek
+
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                   num_workers=num_workers, pin_memory=pin_memory)
 
@@ -152,5 +179,6 @@ def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
 
 
 if __name__ == "__main__":
-    my_tensor = torch.load("../../data/tensors_to_load/experiments_tensor_exp_1_fov_1.pt")
-    visualizer.visualize_tensor_image(my_tensor[0][0])
+    load_experiment_data_to_tensor()
+    # my_tensor = torch.load("../../data/tensors_to_load/experiments_tensor_exp_1_fov_1.pt")
+    # visualizer.visualize_tensor_image(my_tensor[0][0])
