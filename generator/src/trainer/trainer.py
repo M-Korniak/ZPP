@@ -61,7 +61,7 @@ class Trainer:
     - batch_norm_momentum (float | None): The batch norm momentum
     - n_epochs (int): The number of epochs
     - device (str): The device to use
-    - extra_augmentation (v2.Transform | None): The extra augmentation to use
+    - extra_augmentation (Optional[Callable]): The extra augmentation to use
     """
     def __init__(self, lr: float = 2e-4, weight_decay: float = 3e-5,
                  batch_size: int = 16, batch_norm_momentum: float | None = 0.01, n_epochs: int = 10,
@@ -154,7 +154,64 @@ class Trainer:
             )
 
 
+class AutoEncoderTrainer(Trainer):
+    def __init__(self, lr: float = 2e-4, weight_decay: float = 3e-5,
+                 batch_size: int = 16, batch_norm_momentum: float | None = 0.01, n_epochs: int = 10,
+                 device: str = DEVICE,
+                 extra_augmentation: Optional[Callable] = transformations.transformations_for_training):
+        super().__init__(lr, weight_decay, batch_size, batch_norm_momentum, n_epochs, device, extra_augmentation)
+
+    def evaluate(self, model: torch.nn.Module, test_loader: DataLoader, epoch: int, logger: Logger = None):
+        model.eval()
+        total_loss = 0.0
+        batch_count = 0
+        progress_bar = tqdm(test_loader, desc="Evaluate")
+        for batch in progress_bar:
+            batch = batch.to(self.device)
+            predictions = model(batch)
+            loss = self.compute_loss(predictions, batch)
+
+            total_loss += loss.item()
+            batch_count += 1
+
+            avg_loss = total_loss / batch_count
+            progress_bar.set_postfix(loss=f"{avg_loss:.4f}")
+
+        if logger is not None:
+            logger.report_scalar(
+                title="Validation Loss", series="Inner Transformer Loss", iteration=epoch, value=avg_loss
+            )
+
+    def train_epoch(self, model: torch.nn.Module, train_loader: DataLoader,
+                    optimizer: torch.optim.Optimizer, epoch: int, logger: Logger = None):
+        model.train()
+        total_loss = 0.0
+        batch_count = 0
+        avg_loss = 0.0
+        progress_bar = tqdm(train_loader, desc=f"Train epoch {epoch:>3}")
+        for batch in progress_bar:
+            batch = batch.to(self.device)
+            optimizer.zero_grad()
+            predictions = model(batch)
+            loss = self.compute_loss(predictions, batch)
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()
+            batch_count += 1
+
+            avg_loss = total_loss / batch_count
+            progress_bar.set_postfix(loss=f"{avg_loss:.4f}")
+
+        if logger is not None:
+            logger.report_scalar(
+                title="Average Epoch Loss", series="Inner Transformer Loss",
+                iteration=epoch, value=avg_loss
+            )
+
+
 if __name__ == "__main__":
+    # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
         n_epochs=20,
         lr=1e-4,
@@ -178,7 +235,28 @@ if __name__ == "__main__":
     predictions_unnormalized = transformations.unnormalize_image(predictions)
     visualizer.visualize_tensor_image(predictions_unnormalized[0][1])
 
-
+    # EXAMPLE CODE FOR AUTOENCODER TRAINING
+    # autoencoder_trainer = AutoEncoderTrainer(
+    #     n_epochs=100,
+    #     lr=1e-3,
+    #     batch_size=4,
+    #     batch_norm_momentum=0.1,
+    #     extra_augmentation=lambda image: transformations.transformations_for_training(image, crop_size=32)
+    # )
+    # args = model.ModelArgs()
+    # model = model.AutoEncoder(args).to(DEVICE)
+    # autoencoder_trainer.train(model)
+    #
+    # train_loader, test_loader = data_processing.get_dataloader(
+    #     batch_size=1,
+    #     transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=32)
+    # )
+    #
+    # model.eval()
+    # batch = next(iter(test_loader)).to(DEVICE)
+    # predictions = model(batch)
+    # predictions_unnormalized = transformations.unnormalize_image(predictions)
+    # visualizer.visualize_tensor_image(predictions_unnormalized[0][1])
 
 
 
