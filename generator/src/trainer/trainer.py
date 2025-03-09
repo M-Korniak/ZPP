@@ -43,6 +43,38 @@ def setup_clearml():
     )
 
 
+# TODO: add saving and loading hyperparams?
+# TODO: add usage
+def save_model(trained_model: torch.nn.Module, save_path: str) -> None:
+    """
+    Save the model's parameters to a file.
+
+    Args:
+        trained_model (torch.nn.Module): The trained model.
+        save_path (str): Path to save the model parameters.
+    """
+    torch.save(trained_model.state_dict(), save_path)
+
+
+def load_model(load_path: str) -> torch.nn.Module:
+    """
+    Load model parameters from a file into a new model instance.
+
+    Args:
+        load_path (str): Path to the saved model parameters.
+
+    Returns:
+        torch.nn.Module: The model with loaded parameters.
+    """
+    args = model.ModelArgs()
+    trained_model = model.SpatioTemporalTransformer(args).to(DEVICE)
+    
+    trained_model.load_state_dict(torch.load(load_path, map_location=DEVICE))
+    trained_model.set_decoder_init(True)
+    
+    return trained_model
+
+
 class Trainer:
     """
     Trainer class to train the model using AdamW optimizer and StepLR scheduler
