@@ -104,11 +104,10 @@ class Generator:
         - torch.Tensor: The adjacency matrix indicating the neighbors of each nucleus.
         """
         points = points.values
-        vor = Voronoi(points[:, :3])
+        vor = Voronoi(points[:,1:3])
 
         unique_track_ids, inverse_indices = np.unique(points[:, 0], return_inverse=True)
         num_tracks = len(unique_track_ids)
-
         ridge_points = vor.ridge_points.flatten()
         ridge_neighbors = inverse_indices[ridge_points].reshape(-1, 2)
 
@@ -137,11 +136,11 @@ class Generator:
             adjacency_matrix = self.calculate_neighbors(current_frame)
             next_frame = self.generate_next_ERK(current_frame, adjacency_matrix, T)
             next_frame = self.generate_next_move(next_frame)
+            next_frame['Image_Metadata_T'] = T
             result_data_frame = pd.concat([result_data_frame, next_frame])
             current_frame = next_frame
 
         result_data_frame = result_data_frame.reset_index(drop=True)
-
         return result_data_frame
 
 

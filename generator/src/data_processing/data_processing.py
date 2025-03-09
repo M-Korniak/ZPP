@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional, Callable
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -69,7 +69,8 @@ def load_experiment_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6),
 
 class TensorDataset(Dataset):
     def __init__(self, data_folder: str = "../../data/tensors_to_load/",
-                 load_to_ram: bool = False):
+                 load_to_ram: bool = False,
+                 transform: Optional[Callable] = None):
         """
         Args:
             data_folder (str): Path to the folder containing tensor files.
@@ -80,6 +81,7 @@ class TensorDataset(Dataset):
         self.file_names = [file for file in self.file_names if 'experiments_tensor' in file]
         self.load_to_ram = load_to_ram
         self.data_len = len(self.file_names)
+        self.transform = transform
 
         if self.load_to_ram:
             self.data = []
@@ -95,19 +97,17 @@ class TensorDataset(Dataset):
 
     def __getitem__(self, idx: int) -> torch.Tensor:
         if self.load_to_ram:
-            return self.data[idx]
+            item = self.data[idx]
         else:
             file_idx = self.file_names[idx]
             file_path = os.path.join(self.data_folder, file_idx)
             batches = torch.load(file_path)
             item = batches[0]
 
-            return item
+        if self.transform:
+            item = self.transform(item)
 
-
-from torch.utils.data import random_split, DataLoader
-import torch
-import os
+        return item
 
 
 def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
@@ -116,7 +116,8 @@ def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
                    num_workers: int = 0,
                    pin_memory: bool = False,
                    train_split: float = 0.8,
-                   seed: int = 42):
+                   seed: int = 42,
+                   transform: Optional[Callable] = None):
     """
     Get train and test DataLoaders for the TensorDataset.
 
@@ -133,7 +134,7 @@ def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
     - train_dataloader (DataLoader): DataLoader for training set.
     - test_dataloader (DataLoader): DataLoader for testing set.
     """
-    dataset = TensorDataset(data_folder, load_to_ram)
+    dataset = TensorDataset(data_folder, load_to_ram, transform=transform)
 
     train_size = int(train_split * len(dataset))
     test_size = len(dataset) - train_size

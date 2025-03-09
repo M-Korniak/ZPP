@@ -1,9 +1,11 @@
 import imageio
 import numpy as np
 import torch
+import random
 
 from torchvision import transforms
 
+# Calculated for 256x256 images
 MEANS = [223.5459, 240.8361, 237.1875]
 STDS = [64.2124, 38.7054, 44.2737]
 
@@ -100,6 +102,67 @@ def transform_image_to_trainable_form(image: torch.Tensor) -> torch.Tensor:
     - torch.Tensor: The transformed image tensor.
     """
     image = normalize_image(image.float())
+    return image
+
+
+def custom_random_rotation(image: torch.Tensor) -> torch.Tensor:
+    """
+    Apply a random rotation of 0, 90, 180, or 270 degrees to the image.
+
+    Args:
+    - image (torch.Tensor): The image tensor of shape (C, H, W).
+
+    Returns:
+    - torch.Tensor: The rotated image tensor.
+    """
+    rotation_degrees = [0, 90, 180, 270]
+    rotation_angle = random.choice(rotation_degrees)
+    return transforms.functional.rotate(image, angle=rotation_angle)
+
+
+def transformations_for_training(image: torch.Tensor, crop_size=128) -> torch.Tensor:
+    """
+    Applies transformations to the image tensor for training
+
+    Args:
+    - image (torch.Tensor): The image tensor to transform.
+    - crop_size (int): The size to crop the image to.
+
+    Returns:
+    - torch.Tensor: The transformed image tensor.
+    """
+    image = normalize_image(image.float())
+
+    transform = transforms.Compose([
+        transforms.RandomCrop(crop_size),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomHorizontalFlip(),
+        transforms.Lambda(lambda x: custom_random_rotation(x))
+    ])
+
+    image = transform(image)
+
+    return image
+
+
+def transformations_for_evaluation(image: torch.Tensor, crop_size=128) -> torch.Tensor:
+    """
+    Applies transformations to the image tensor for evaluation
+
+    Args:
+    - image (torch.Tensor): The image tensor to transform.
+
+    Returns:
+    - torch.Tensor: The transformed image tensor.
+    """
+    image = normalize_image(image.float())
+
+    transform = transforms.Compose([
+        transforms.CenterCrop(crop_size),
+    ])
+
+    image = transform(image)
+
     return image
 
 
