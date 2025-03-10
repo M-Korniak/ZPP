@@ -7,6 +7,7 @@ from tqdm import tqdm
 from clearml import Logger, Task
 
 import src.model.model as model
+from src.model.model import ModelArgs 
 import src.data_processing.data_processing as data_processing
 import src.transformations.transformations as transformations
 import src.visualizer.visualizer as visualizer
@@ -43,35 +44,53 @@ def setup_clearml():
     )
 
 
-# TODO: add saving and loading hyperparams?
 # TODO: add usage
-def save_model(trained_model: torch.nn.Module, save_path: str) -> None:
+def save_model(trained_model: torch.nn.Module, args: ModelArgs, save_path: str) -> None:
     """
-    Save the model's parameters to a file.
+    Save the model's parameters and hyperparameters to a file.
 
     Args:
         trained_model (torch.nn.Module): The trained model.
-        save_path (str): Path to save the model parameters.
+        args (model.ModelArgs): The hyperparameters.
+        save_path (str): Path to save the model parameters and hyperparameters.
     """
-    torch.save(trained_model.state_dict(), save_path)
+    # Save both the model's state_dict and the hyperparameters
+    torch.save({
+        'params': trained_model.state_dict(),
+        'hyperparams': args
+    }, save_path)
 
 
-def load_model(load_path: str) -> torch.nn.Module:
+def load_model(load_path: str, model_type: str) -> torch.nn.Module:
     """
     Load model parameters from a file into a new model instance.
 
     Args:
         load_path (str): Path to the saved model parameters.
+        model_type: either 'AutoEncoder' or 'SpatioTemporalTransformer'
 
     Returns:
         torch.nn.Module: The model with loaded parameters.
     """
-    args = model.ModelArgs()
-    trained_model = model.SpatioTemporalTransformer(args).to(DEVICE)
+    # Load the saved arguments
+    checkpoint = torch.load(load_path, map_location=DEVICE)
+    params = checkpoint['params']
+    hyperparams = checkpoint['hyperparams']
     
-    trained_model.load_state_dict(torch.load(load_path, map_location=DEVICE))
-    trained_model.set_decoder_init(True)
+    # Create a new model instance with loaded hyperparams
+    if model_type == 'AutoEncoder':
+        trained_model = model.AutoEncoder(hyperparams).to(DEVICE)
     
+    elif model_type == 'SpatioTemporalTransformer':
+        trained_model = model.SpatioTemporalTransformer(hyperparams).to(DEVICE)
+        trained_model.set_decoder_init(True)
+    
+    else:
+        print("Incorrect model type; try again with one of the following : 'AutoEncoder', 'SpatioTemporalTransformer'.")
+        return None
+
+    # Load the params into the new model
+    trained_model.load_state_dict(params)
     return trained_model
 
 
