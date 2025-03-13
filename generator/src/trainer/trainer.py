@@ -44,7 +44,6 @@ def setup_clearml():
     )
 
 
-# TODO: add usage
 def save_model(trained_model: torch.nn.Module, args: ModelArgs, save_path: str) -> None:
     """
     Save the model's parameters and hyperparameters to a file.
@@ -83,12 +82,12 @@ def load_model(load_path: str, model_type: str) -> torch.nn.Module:
     
     elif model_type == 'SpatioTemporalTransformer':
         trained_model = model.SpatioTemporalTransformer(hyperparams).to(DEVICE)
-        trained_model.set_decoder_init(True)
     
     else:
         print("Incorrect model type; try again with one of the following : 'AutoEncoder', 'SpatioTemporalTransformer'.")
         return None
 
+    trained_model.set_decoder_init(True)
     # Load the params into the new model
     trained_model.load_state_dict(params)
     return trained_model
