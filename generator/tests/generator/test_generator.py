@@ -1,4 +1,4 @@
-from src.generator.generator import Generator
+from src.rule_based_generator.rule_based_generator import Generator
 import pytest
 import numpy as np
 import pandas as pd
