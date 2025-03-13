@@ -10,6 +10,7 @@ import src.model.model as model
 import src.data_processing.data_processing as data_processing
 import src.transformations.transformations as transformations
 import src.visualizer.visualizer as visualizer
+import src.generator.generator as generator
 
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
@@ -213,7 +214,7 @@ class AutoEncoderTrainer(Trainer):
 if __name__ == "__main__":
     # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
-        n_epochs=100,
+        n_epochs=10,
         lr=2e-3,
         batch_size=4,
         batch_norm_momentum=0.01,
@@ -231,11 +232,16 @@ if __name__ == "__main__":
 
     model.eval()
     batch = next(iter(test_loader)).to(DEVICE)
-    predictions = model(batch[:, :-1])
-    predictions_unnormalized = transformations.unnormalize_image(predictions)
-    batch_unnormalized = transformations.unnormalize_image(batch)
-    visualizer.visualize_tensor_image(predictions_unnormalized[0][45])
-    visualizer.visualize_tensor_image(batch_unnormalized[0][46])
+
+    generated_video = generator.generate_video_from_tensor(model, batch[:, :120], video_length=258)
+    generated_video = transformations.unnormalize_image(generated_video)
+    visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
+
+    # predictions = model(batch[:, :-1])
+    # predictions_unnormalized = transformations.unnormalize_image(predictions)
+    # batch_unnormalized = transformations.unnormalize_image(batch)
+    # visualizer.visualize_tensor_image(predictions_unnormalized[0][45])
+    # visualizer.visualize_tensor_image(batch_unnormalized[0][46])
 
     # EXAMPLE CODE FOR AUTOENCODER TRAINING
     # autoencoder_trainer = AutoEncoderTrainer(
