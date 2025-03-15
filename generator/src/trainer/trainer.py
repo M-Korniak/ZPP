@@ -1,4 +1,5 @@
 import os
+from dataclasses import asdict
 import torch
 import torch.nn.functional as F
 from typing import Iterable, Callable, Optional
@@ -53,14 +54,17 @@ def save_model(trained_model: torch.nn.Module, args: ModelArgs, save_path: str) 
         args (model.ModelArgs): The hyperparameters.
         save_path (str): Path to save the model parameters and hyperparameters.
     """
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
     # Save both the model's state_dict and the hyperparameters
     torch.save({
         'params': trained_model.state_dict(),
-        'hyperparams': args
+        'hyperparams': asdict(args)
     }, save_path)
 
 
-def load_model(load_path: str, model_type: str) -> torch.nn.Module:
+def load_model(load_path: str, model_type: str, device: torch.device) -> torch.nn.Module:
     """
     Load model parameters from a file into a new model instance.
 
@@ -72,17 +76,19 @@ def load_model(load_path: str, model_type: str) -> torch.nn.Module:
         torch.nn.Module: The model with loaded parameters.
     """
     # Load the saved arguments
-    checkpoint = torch.load(load_path, map_location=DEVICE)
+    checkpoint = torch.load(load_path, map_location=device)
     params = checkpoint['params']
-    hyperparams = checkpoint['hyperparams']
-    
+    # Rebuild ModelArgs from the dictionary
+    hyperparams_dict = checkpoint['hyperparams']
+    hyperparams = ModelArgs(**hyperparams_dict)
+
     # Create a new model instance with loaded hyperparams
     if model_type == 'AutoEncoder':
-        trained_model = model.AutoEncoder(hyperparams).to(DEVICE)
-    
+        trained_model = model.AutoEncoder(hyperparams).to(device)
+
     elif model_type == 'SpatioTemporalTransformer':
-        trained_model = model.SpatioTemporalTransformer(hyperparams).to(DEVICE)
-    
+        trained_model = model.SpatioTemporalTransformer(hyperparams).to(device)
+
     else:
         print("Incorrect model type; try again with one of the following : 'AutoEncoder', 'SpatioTemporalTransformer'.")
         return None
