@@ -468,6 +468,9 @@ class AutoEncoder(nn.Module):
 
         self.decoder_init = False
 
+    def set_decoder_init(self, decoder_init: bool):
+        self.decoder_init = decoder_init
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.encoder(x)
         if not self.decoder_init:
