@@ -36,7 +36,9 @@ def visualize_tensor_images_as_gif(image_tensors: torch.tensor, path: str = "../
     Returns:
     - None
     """
-    images = (image_tensor.permute(1, 2, 0).detach().float().cpu().numpy() / 255.0 for image_tensor in image_tensors)
+    images = (image_tensor.permute(1, 2, 0).clip(0., 255.0)
+              .detach().float().cpu().numpy() / 255.0 for image_tensor in image_tensors)
+
     with imageio.get_writer(path, mode='I', duration=0.1) as writer:
         for image in images:
             writer.append_data((image * 255).astype(np.uint8))

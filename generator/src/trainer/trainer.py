@@ -214,7 +214,7 @@ class AutoEncoderTrainer(Trainer):
 if __name__ == "__main__":
     # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
-        n_epochs=10,
+        n_epochs=500,
         lr=2e-3,
         batch_size=4,
         batch_norm_momentum=0.01,
