@@ -25,6 +25,25 @@ def visualize_tensor_image(image_tensor: torch.tensor):
     plt.show()
 
 
+def visualize_tensor_images_as_gif(image_tensors: torch.tensor, path: str = "../../data/animation.gif") -> None:
+    """
+    Visualizes a list of tensor images as a gif.
+
+    Args:
+    - image_tensors (torch.tensor): The list of tensor images to visualize.
+    - path (str): The path to save the gif.
+
+    Returns:
+    - None
+    """
+    images = (image_tensor.permute(1, 2, 0).clip(0., 255.0)
+              .detach().float().cpu().numpy() / 255.0 for image_tensor in image_tensors)
+
+    with imageio.get_writer(path, mode='I', duration=0.1) as writer:
+        for image in images:
+            writer.append_data((image * 255).astype(np.uint8))
+
+
 def visualize_simulation(simulation: pd.DataFrame, number_of_frames: int = 258,
                          path: str = "../../data/simulation.gif") -> None:
     """

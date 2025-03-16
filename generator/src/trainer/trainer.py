@@ -12,6 +12,7 @@ from src.model.model import ModelArgs
 import src.data_processing.data_processing as data_processing
 import src.transformations.transformations as transformations
 import src.visualizer.visualizer as visualizer
+import src.generator.generator as generator
 
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
@@ -269,11 +270,11 @@ class AutoEncoderTrainer(Trainer):
 if __name__ == "__main__":
     # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
-        n_epochs=20,
-        lr=1e-4,
+        n_epochs=500,
+        lr=2e-3,
         batch_size=4,
-        batch_norm_momentum=0.1,
-        extra_augmentation=lambda image: transformations.transformations_for_training(image, crop_size=32)
+        batch_norm_momentum=0.01,
+        extra_augmentation=lambda image: transformations.transformations_for_training(image, crop_size=16)
     )
     args = model.ModelArgs()
     model = model.SpatioTemporalTransformer(args).to(DEVICE)
@@ -282,14 +283,21 @@ if __name__ == "__main__":
     # get the first batch of the loader
     train_loader, test_loader = data_processing.get_dataloader(
         batch_size=1,
-        transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=32)
+        transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=16)
     )
 
     model.eval()
     batch = next(iter(test_loader)).to(DEVICE)
-    predictions = model(batch[:, :-1])
-    predictions_unnormalized = transformations.unnormalize_image(predictions)
-    visualizer.visualize_tensor_image(predictions_unnormalized[0][1])
+
+    generated_video = generator.generate_video_from_tensor(model, batch[:, :120], video_length=258)
+    generated_video = transformations.unnormalize_image(generated_video)
+    visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
+
+    # predictions = model(batch[:, :-1])
+    # predictions_unnormalized = transformations.unnormalize_image(predictions)
+    # batch_unnormalized = transformations.unnormalize_image(batch)
+    # visualizer.visualize_tensor_image(predictions_unnormalized[0][45])
+    # visualizer.visualize_tensor_image(batch_unnormalized[0][46])
 
     # EXAMPLE CODE FOR AUTOENCODER TRAINING
     # autoencoder_trainer = AutoEncoderTrainer(
