@@ -94,8 +94,12 @@ def load_model(load_path: str, model_type: str, device: torch.device) -> torch.n
         print("Incorrect model type; try again with one of the following : 'AutoEncoder', 'SpatioTemporalTransformer'.")
         return None
 
-    trained_model.set_decoder_init(True)
-    # Load the params into the new model
+    encoder_in_features, encoder_out_features = params['encoder.fc.weight'].shape
+    decoder_in_features, decoder_out_features = params['decoder.fc.weight'].shape
+
+    trained_model.encoder.fc = torch.nn.Linear(encoder_out_features, encoder_in_features)
+    trained_model.decoder.fc = torch.nn.Linear(decoder_out_features, decoder_in_features)
+    trained_model.set_decoder_init(False)
     trained_model.load_state_dict(params)
     return trained_model
 
@@ -273,28 +277,21 @@ class AutoEncoderTrainer(Trainer):
 if __name__ == "__main__":
     # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
-        n_epochs=500,
+        n_epochs=10,
         lr=2e-3,
         batch_size=4,
         batch_norm_momentum=0.01,
         extra_augmentation=lambda image: transformations.transformations_for_training(image, crop_size=16)
     )
-    args = model.ModelArgs()
-    model = model.SpatioTemporalTransformer(args).to(DEVICE)
+    # args = model.ModelArgs()
+    # model = model.SpatioTemporalTransformer(args).to(DEVICE)
+    model = load_model("../../data/model/saved_model.pth", 'SpatioTemporalTransformer', DEVICE)
     trainer.train(model)
+    save_model(model, model.args, "../../data/model/saved_model.pth")
 
-    # get the first batch of the loader
-    train_loader, test_loader = data_processing.get_dataloader(
-        batch_size=1,
-        transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=16)
-    )
-
-    model.eval()
-    batch = next(iter(test_loader)).to(DEVICE)
-
-    generated_video = generator.generate_video_from_tensor(model, batch[:, :120], video_length=258)
-    generated_video = transformations.unnormalize_image(generated_video)
-    visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
+    # generated_video = generator.generate_video_from_tensor(model, batch[:, :120], video_length=258)
+    # generated_video = transformations.unnormalize_image(generated_video)
+    # visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
 
     # predictions = model(batch[:, :-1])
     # predictions_unnormalized = transformations.unnormalize_image(predictions)
