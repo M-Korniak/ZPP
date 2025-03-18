@@ -39,7 +39,16 @@ def crop_to_field_of_view(image: torch.Tensor, upper_left: int = 73,
 
     Returns:
     - torch.Tensor: The cropped image tensor.
+    
+    Raises:
+    - IndexError: If the image is too small for the crop dimensions.
     """
+    _, _, height, width = image.shape  # Pobranie wymiarów obrazu
+
+    # Sprawdzenie, czy obraz jest wystarczająco duży
+    if height < lower_right or width < lower_left:
+        raise IndexError("Image is too small to crop to the specified field of view.")
+
     return image[..., upper_left:lower_right, upper_right:lower_left]
 
 
@@ -53,8 +62,15 @@ def normalize_image(image: torch.Tensor) -> torch.Tensor:
     Returns:
     - torch.Tensor: The normalized image tensor.
     """
+    if image.ndim != 4:
+        raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
+    
+    if image.shape[1] != 3:
+        raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
+
     mean = torch.tensor(MEANS, device=image.device).view(3, 1, 1)
     std = torch.tensor(STDS, device=image.device).view(3, 1, 1)
+    
     return (image - mean) / std
 
 
@@ -68,6 +84,11 @@ def unnormalize_image(image: torch.Tensor) -> torch.Tensor:
     Returns:
     - torch.Tensor: The unnormalized image tensor.
     """
+    if image.ndim != 4:
+        raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
+    
+    if image.shape[1] != 3:
+        raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
     mean = torch.tensor(MEANS, device=image.device).view(3, 1, 1)
     std = torch.tensor(STDS, device=image.device).view(3, 1, 1)
     return image * std + mean
@@ -84,6 +105,9 @@ def resize_image(image: torch.Tensor, size: int = 256) -> torch.Tensor:
     Returns:
     - torch.Tensor: The resized image tensor.
     """
+    if image.shape[2] != 3:
+        raise ValueError("Inmut image tensor must have exactly 3 channels")
+
     B, S = image.shape[:2]
     image = image.view(B * S, *image.shape[2:])
     resize_transform = transforms.Resize((size, size), antialias=False)
@@ -181,14 +205,5 @@ def transform_gif_to_tensor(gif_path: str = "../../data/simulation.gif") -> torc
     frames = crop_to_field_of_view(frames)
     frames = resize_image(frames)
     return frames
-
-
-
-
-
-
-
-
-
 
 
