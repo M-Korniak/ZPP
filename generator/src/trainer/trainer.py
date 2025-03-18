@@ -118,11 +118,12 @@ class Trainer:
     - batch_norm_momentum (float | None): The batch norm momentum
     - n_epochs (int): The number of epochs
     - device (str): The device to use
+    - load_to_ram (bool): Whether to load the data to RAM
     - extra_augmentation (Optional[Callable]): The extra augmentation to use
     """
     def __init__(self, lr: float = 2e-4, weight_decay: float = 3e-5,
                  batch_size: int = 16, batch_norm_momentum: float | None = 0.01, n_epochs: int = 10,
-                 device: str = DEVICE,
+                 device: str = DEVICE, load_to_ram: bool = False,
                  extra_augmentation: Optional[Callable] = transformations.transformations_for_training):
         self.lr = lr
         self.weight_decay = weight_decay
@@ -130,6 +131,7 @@ class Trainer:
         self.batch_norm_momentum = batch_norm_momentum
         self.n_epochs = n_epochs
         self.device = device
+        self.load_to_ram = load_to_ram
         self.extra_augmentation = extra_augmentation
 
     def get_optimizer_and_scheduler(
@@ -168,6 +170,7 @@ class Trainer:
 
         train_loader, test_loader = (data_processing.
                                      get_dataloader(batch_size=self.batch_size,
+                                                    load_to_ram=self.load_to_ram,
                                                     transform=self.extra_augmentation))
 
         if self.batch_norm_momentum is not None:
