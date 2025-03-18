@@ -463,6 +463,7 @@ class AutoEncoder(nn.Module):
     """
     def __init__(self, args: ModelArgs):
         super().__init__()
+        self.args = args
         self.encoder = Encoder(args)
         self.decoder = Decoder(args)
 
@@ -497,6 +498,7 @@ class SpatioTemporalTransformer(nn.Module):
     """
     def __init__(self, args: ModelArgs):
         super().__init__()
+        self.args = args
         self.encoder = Encoder(args)
         self.transformer = Transformer(args)
         self.decoder = Decoder(args)
