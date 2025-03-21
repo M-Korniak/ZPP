@@ -277,21 +277,28 @@ class AutoEncoderTrainer(Trainer):
 if __name__ == "__main__":
     # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
-        n_epochs=10,
+        n_epochs=500,
         lr=2e-3,
         batch_size=4,
+        load_to_ram=False,
         batch_norm_momentum=0.01,
         extra_augmentation=lambda image: transformations.transformations_for_training(image, crop_size=16)
     )
-    # args = model.ModelArgs()
-    # model = model.SpatioTemporalTransformer(args).to(DEVICE)
-    model = load_model("../../data/model/saved_model.pth", 'SpatioTemporalTransformer', DEVICE)
+    args = model.ModelArgs()
+    model = model.SpatioTemporalTransformer(args).to(DEVICE)
+    # model = load_model("../../data/model/saved_model64_1200.pth", 'SpatioTemporalTransformer', DEVICE)
     trainer.train(model)
-    save_model(model, model.args, "../../data/model/saved_model.pth")
+    # save_model(model, model.args, "../../data/model/saved_model16.pth")
 
-    # generated_video = generator.generate_video_from_tensor(model, batch[:, :120], video_length=258)
-    # generated_video = transformations.unnormalize_image(generated_video)
-    # visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
+    train_loader, test_loader = data_processing.get_dataloader(
+        batch_size=1,
+        transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=16)
+    )
+    model.eval().to(DEVICE)
+    batch = next(iter(test_loader)).to(DEVICE)
+    generated_video = generator.generate_video_from_tensor(model, batch[:, :200], video_length=258)
+    generated_video = transformations.unnormalize_image(generated_video)
+    visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
 
     # predictions = model(batch[:, :-1])
     # predictions_unnormalized = transformations.unnormalize_image(predictions)

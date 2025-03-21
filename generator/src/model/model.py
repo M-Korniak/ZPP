@@ -16,7 +16,7 @@ import src.transformations.transformations as transformations
 @dataclass
 class ModelArgs:
     dim: int = 32  # Play to determine the best value
-    n_layers: int = 8
+    n_layers: int = 64
     n_heads: int = 8
     multiple_of: int = 64  # make SwiGLU hidden layer size multiple of large power of 2
     norm_eps: float = 1e-5
@@ -25,7 +25,7 @@ class ModelArgs:
     max_batch_size: int = 32
     max_seq_len: int = 258
 
-    out_channel_sizes: List[int] = field(default_factory=lambda: [32, 64, 128, 256])
+    out_channel_sizes: List[int] = field(default_factory=lambda: [16, 32, 64, 128])
     kernel_sizes: List[int] = field(default_factory=lambda: [3, 3, 3, 3])
     strides: List[int] = field(default_factory=lambda: [1, 1, 1, 1])
     paddings: List[int] = field(default_factory=lambda: [1, 1, 1, 1])
@@ -350,18 +350,27 @@ class Encoder(nn.Module):
 
         self.fc = None  # Will be initialized with the first forward pass
         self.after_conv_shape = None
+        self.activations = []
 
     def get_after_conv_shape(self) -> torch.Size:
         return self.after_conv_shape
+
+    def get_activations(self) -> List[torch.Tensor]:
+        return self.activations
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (B, S, C, H, W) -> (B * S, C, H, W)
         B, S = x.shape[:2]
         x = x.reshape(B * S, *x.shape[2:])
+        self.activations = []
+        i = 0
         for conv_layer, batch_layer in zip(self.conv_layers, self.batch_norm_layers):
             x = conv_layer(x)
             x = batch_layer(F.relu(x))
-            x = F.max_pool2d(x, self.scaling_factor, self.scaling_factor)
+            self.activations.append(x)
+            if i < self.n_conv_layers - 1:
+                x = F.max_pool2d(x, self.scaling_factor, self.scaling_factor)
+            i += 1
 
         if self.after_conv_shape is None:
             self.after_conv_shape = x.shape[1:]
@@ -398,6 +407,7 @@ class Decoder(nn.Module):
 
         self.after_conv_shape = None  # To be set based on the encoder
         self.fc = None  # To be set based on the encoder
+        self.encoder_activations = []
 
         self.deconv_layers = nn.ModuleList()
         self.batch_norm_layers = nn.ModuleList()
@@ -409,7 +419,7 @@ class Decoder(nn.Module):
 
             self.deconv_layers.append(
                 nn.ConvTranspose2d(
-                    in_channels=in_channels,
+                    in_channels=2 * in_channels,
                     out_channels=out_channels,
                     kernel_size=args.kernel_sizes[i] + 1,
                     stride=self.scaling_factor,
@@ -421,12 +431,12 @@ class Decoder(nn.Module):
                 nn.BatchNorm2d(out_channels)
             )
 
-        self.last_conv_layer = nn.ConvTranspose2d(
-            in_channels=args.out_channel_sizes[0],
+        self.last_conv_layer = nn.Conv2d(
+            in_channels=2 * args.out_channel_sizes[0],
             out_channels=3,
-            kernel_size=args.kernel_sizes[0] + 1,
-            stride=self.scaling_factor,
-            padding=args.paddings[0],
+            kernel_size=args.kernel_sizes[0],
+            stride=args.strides[0],
+            padding=args.paddings[0]
         )
 
     def set_after_conv_shape(self, after_conv_shape: torch.Size):
@@ -434,17 +444,26 @@ class Decoder(nn.Module):
         self.fc = (nn.Linear(self.latent_dim, int(torch.prod(torch.Tensor(list(after_conv_shape)))))
                    .to(next(self.parameters()).device))
 
+    def set_encoder_activations(self, activations: List[torch.Tensor]):
+        self.encoder_activations = activations
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (B, S, H) -> (B * S, H)
         B, S = x.shape[:2]
         x = x.view(B * S, *x.shape[2:])
         x = self.fc(x)
         x = x.view(-1, *self.after_conv_shape)
-
-        for deconv_layer, batch_layer in zip(self.deconv_layers, self.batch_norm_layers):
+        i = 0
+        for encoder_activation, deconv_layer, batch_layer in zip(reversed(self.encoder_activations),
+                                                                 self.deconv_layers, self.batch_norm_layers,
+                                                                 strict=False):
+            x = torch.cat((x, encoder_activation), dim=1)
             x = deconv_layer(x)
             x = batch_layer(F.relu(x))
+            i += 1
 
+        self.encoder_activations[0] = torch.zeros(self.encoder_activations[0].shape, device=x.device)  # TODO DELETE
+        x = torch.cat((x, self.encoder_activations[0]), dim=1)
         x = self.last_conv_layer(x)
 
         return x.view(B, S, *x.shape[1:])
@@ -521,6 +540,7 @@ class SpatioTemporalTransformer(nn.Module):
             self.decoder.set_after_conv_shape(self.encoder.get_after_conv_shape())
             self.decoder_init = True
 
+        self.decoder.set_encoder_activations(self.encoder.get_activations())
         x = self.decoder(x)
 
         return x
