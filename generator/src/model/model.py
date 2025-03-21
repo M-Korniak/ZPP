@@ -432,7 +432,7 @@ class Decoder(nn.Module):
             )
 
         self.last_conv_layer = nn.Conv2d(
-            in_channels=2 * args.out_channel_sizes[0],
+            in_channels=args.out_channel_sizes[0],
             out_channels=3,
             kernel_size=args.kernel_sizes[0],
             stride=args.strides[0],
@@ -453,17 +453,13 @@ class Decoder(nn.Module):
         x = x.view(B * S, *x.shape[2:])
         x = self.fc(x)
         x = x.view(-1, *self.after_conv_shape)
-        i = 0
         for encoder_activation, deconv_layer, batch_layer in zip(reversed(self.encoder_activations),
                                                                  self.deconv_layers, self.batch_norm_layers,
                                                                  strict=False):
             x = torch.cat((x, encoder_activation), dim=1)
             x = deconv_layer(x)
             x = batch_layer(F.relu(x))
-            i += 1
 
-        self.encoder_activations[0] = torch.zeros(self.encoder_activations[0].shape, device=x.device)  # TODO DELETE
-        x = torch.cat((x, self.encoder_activations[0]), dim=1)
         x = self.last_conv_layer(x)
 
         return x.view(B, S, *x.shape[1:])
