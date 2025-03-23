@@ -120,6 +120,25 @@ def custom_random_rotation(image: torch.Tensor) -> torch.Tensor:
     return transforms.functional.rotate(image, angle=rotation_angle)
 
 
+def add_random_noise(img: torch.Tensor,
+                     probability: float = 0.5, noise_std: float = 0.05) -> torch.Tensor:
+    """
+    Add random noise to an image tensor with a given probability
+    Args:
+    - img (torch.Tensor): The image tensor to add noise to
+    - probability (float): The probability of adding noise to the image
+    - noise_std (float): The standard deviation of the noise to add
+
+    Returns:
+        torch.Tensor: The image tensor with added noise
+    """
+
+    if random.random() < probability:
+        noise = torch.randn(img.size(), device=img.device) * noise_std
+        img = img + noise
+    return img
+
+
 def transformations_for_training(image: torch.Tensor, crop_size=128) -> torch.Tensor:
     """
     Applies transformations to the image tensor for training
@@ -137,7 +156,7 @@ def transformations_for_training(image: torch.Tensor, crop_size=128) -> torch.Te
         transforms.RandomCrop(crop_size),
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
-        transforms.Lambda(lambda x: custom_random_rotation(x))
+        transforms.Lambda(lambda x: custom_random_rotation(x)),
     ])
 
     image = transform(image)
