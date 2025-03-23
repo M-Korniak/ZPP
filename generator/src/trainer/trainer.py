@@ -277,7 +277,7 @@ class AutoEncoderTrainer(Trainer):
 if __name__ == "__main__":
     # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
-        n_epochs=500,
+        n_epochs=100,
         lr=2e-3,
         batch_size=4,
         load_to_ram=False,
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     )
     args = model.ModelArgs()
     model = model.SpatioTemporalTransformer(args).to(DEVICE)
-    # model = load_model("../../data/model/saved_model64_1200.pth", 'SpatioTemporalTransformer', DEVICE)
+    # model = load_model("../../data/model/saved_model64_200_alternative.pth", 'SpatioTemporalTransformer', DEVICE)
     trainer.train(model)
     # save_model(model, model.args, "../../data/model/saved_model16.pth")
 
@@ -296,7 +296,7 @@ if __name__ == "__main__":
     )
     model.eval().to(DEVICE)
     batch = next(iter(test_loader)).to(DEVICE)
-    generated_video = generator.generate_video_from_tensor(model, batch[:, :200], video_length=258)
+    generated_video = generator.generate_video_from_tensor(model, batch[:, :100], video_length=258)
     generated_video = transformations.unnormalize_image(generated_video)
     visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
 
