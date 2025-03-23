@@ -2,6 +2,7 @@ import os
 import torch
 import shutil
 import pytest
+import tempfile  # For creating temporary directories
 
 import src.model.model as model
 from src.model.model import ModelArgs
@@ -31,47 +32,51 @@ def compare_hyperparams(args1, args2):
     return args1 == args2
 
 @pytest.fixture
-def cleanup_dirs():
-    # Setup: create directories if they don't exist
-    os.makedirs("./autoencoder_save", exist_ok=True)
-    os.makedirs("./transformer_save", exist_ok=True)
-    yield
-    # Teardown: remove directories after test
-    shutil.rmtree("./autoencoder_save")
-    shutil.rmtree("./transformer_save")
+def temp_dirs():
+    """
+    Fixture to create temporary directories for testing.
+    """
+    # Create temporary directories
+    with tempfile.TemporaryDirectory() as autoencoder_dir, tempfile.TemporaryDirectory() as transformer_dir:
+        yield autoencoder_dir, transformer_dir  # Pass the paths to the test
+        # Directories are automatically cleaned up after the test
 
-def test_save_and_load(cleanup_dirs):
+def test_save_and_load(temp_dirs):
+    """
+    Test saving and loading of AutoEncoder and SpatioTemporalTransformer models.
+    """
+    autoencoder_dir, transformer_dir = temp_dirs
+
     # Initialize the model with default args
     args = ModelArgs()
     autoencoder = model.AutoEncoder(args)
     transformer = model.SpatioTemporalTransformer(args)
     
-    autoen_state_before, trans_state_before = autoencoder.state_dict(), transformer.state_dict()
+    # Save the state dictionaries before saving the models
+    autoen_state_before = autoencoder.state_dict()
+    trans_state_before = transformer.state_dict()
    
     # Save the models
-    save_model(autoencoder, args, "./autoencoder_save")
-    save_model(transformer, args, "./transformer_save")
+    save_model(autoencoder, args, os.path.join(autoencoder_dir, "autoencoder_save"))
+    save_model(transformer, args, os.path.join(transformer_dir, "transformer_save"))
 
     # Load the models
-    loaded_autoencoder = load_model("./autoencoder_save", "AutoEncoder", torch.device("cpu"))
-    loaded_transformer = load_model("./transformer_save", "SpatioTemporalTransformer", torch.device("cpu"))
+    loaded_autoencoder = load_model(os.path.join(autoencoder_dir, "autoencoder_save"), "AutoEncoder", torch.device("cpu"))
+    loaded_transformer = load_model(os.path.join(transformer_dir, "transformer_save"), "SpatioTemporalTransformer", torch.device("cpu"))
 
     # Verify state dictionaries
-    autoen_state_after, trans_state_after = loaded_autoencoder.state_dict(), loaded_transformer.state_dict()
+    autoen_state_after = loaded_autoencoder.state_dict()
+    trans_state_after = loaded_transformer.state_dict()
     assert compare_states(autoen_state_before, autoen_state_after)
     assert compare_states(trans_state_before, trans_state_after)
 
     # Verify hyperparameters
     # Extract args from the saved models
-    autoencoder_checkpoint = torch.load("./autoencoder_save")
-    transformer_checkpoint = torch.load("./transformer_save")
+    autoencoder_checkpoint = torch.load(os.path.join(autoencoder_dir, "autoencoder_save"))
+    transformer_checkpoint = torch.load(os.path.join(transformer_dir, "transformer_save"))
 
     loaded_autoencoder_args = autoencoder_checkpoint["hyperparams"]
     loaded_transformer_args = transformer_checkpoint["hyperparams"]
     
     assert compare_hyperparams(args, loaded_autoencoder_args)
     assert compare_hyperparams(args, loaded_transformer_args)
-
-# Run the test
-if __name__ == "__main__":
-    pytest.main()
