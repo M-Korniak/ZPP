@@ -127,7 +127,8 @@ def visualize_pca(matrix: np.ndarray,
                  cell_types: list, 
                  n_components: int = 2, 
                  palette: str = 'tab10',
-                 title: str = 'PCA Visualization') -> pd.DataFrame:
+                 title: str = 'PCA Visualization',
+                 save_path: str = None) -> pd.DataFrame:
     """
     Perform PCA and visualize the first two principal components.
     """
@@ -147,14 +148,22 @@ def visualize_pca(matrix: np.ndarray,
     plt.ylabel('Principal Component 2', fontsize=12)
     plt.legend(title='Cell Type', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print("Saved visualisation to ",save_path)
+    else:
+        plt.show()
     
     return df_pca
 
 def visualize_umap(matrix: np.ndarray, 
                   cell_types: list, 
                   palette: str = 'tab10',
-                  title: str = 'UMAP Visualization') -> pd.DataFrame:
+                  title: str = 'UMAP Visualization',
+                  save_path: str = None) -> pd.DataFrame:
     """
     Perform UMAP dimensionality reduction and visualize results.
     """
@@ -171,14 +180,22 @@ def visualize_umap(matrix: np.ndarray,
     plt.title(title, fontsize=14)
     plt.legend(title='Cell Type', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print("Saved visualisation to ",save_path)
+    else:
+        plt.show()
     
     return df_umap
 
 def visualize_tsne(matrix: np.ndarray, 
                   cell_types: list, 
                   palette: str = 'tab10',
-                  title: str = 't-SNE Visualization') -> pd.DataFrame:
+                  title: str = 't-SNE Visualization',
+                  save_path: str = None) -> pd.DataFrame:
     """
     Perform t-SNE dimensionality reduction and visualize results.
     """
@@ -195,7 +212,14 @@ def visualize_tsne(matrix: np.ndarray,
     plt.title(title, fontsize=14)
     plt.legend(title='Cell Type', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print("Saved visualisation to ",save_path)
+    else:
+        plt.show()
     
     return df_tsne
 
@@ -269,6 +293,7 @@ if __name__ == "__main__":
     metadata_path = "../../data/plateMap.csv"
     input_data_path = "../../data/tensors_to_load"
     path_to_model = "../../data/saved_model64_200_alternative.pth"
+    results_path = "../../data/latent_analysis"
     
     # Uncomment if you don't have the files with tensors in input_data_path yet
     # load_experiment_data_to_tensor()
@@ -298,20 +323,26 @@ if __name__ == "__main__":
     print("\nLatent Space Analysis:")
     latent_pca = visualize_pca(latent_matrix, cell_types,
                              n_components=5, 
-                             title='PCA of Encoder Latent Space')
+                             title='PCA of Encoder Latent Space',
+                             save_path=f"{results_path}/latent_pca.png")
     latent_umap = visualize_umap(latent_matrix, cell_types,
-                               title='UMAP of Encoder Latent Space')
+                               title='UMAP of Encoder Latent Space',
+                               save_path=f"{results_path}/latent_umap.png")
     latent_tsne = visualize_tsne(latent_matrix, cell_types,
-                               title='t-SNE of Encoder Latent Space')
+                               title='t-SNE of Encoder Latent Space',
+                               save_path=f"{results_path}/latent_tsne.png")
 
     print("\nTransformer Space Analysis:")
     transformer_pca = visualize_pca(transformer_matrix, cell_types,
                                   n_components=5,
-                                  title='PCA of Transformer Space')
+                                  title='PCA of Transformer Space',
+                                  save_path=f"{results_path}/transformer_pca.png")
     transformer_umap = visualize_umap(transformer_matrix, cell_types,
-                                    title='UMAP of Transformer Space')
+                                    title='UMAP of Transformer Space',
+                                    save_path=f"{results_path}/transformer_umap.png")
     transformer_tsne = visualize_tsne(transformer_matrix, cell_types,
-                                title='t-SNE of Transformer Space')
+                                title='t-SNE of Transformer Space',
+                                save_path=f"{results_path}/transformer_tsne.png")
 
     # Quantitative evaluation
     print("\nLatent Space Performance:")
@@ -324,7 +355,5 @@ if __name__ == "__main__":
     evaluate_silhouette(transformer_matrix, cell_types)
     evaluate_clustering(transformer_matrix, cell_types)
 
-    # TODO: add t-SNE
     # TODO: try out single frames instead of the videos
-    # TODO: add the option to save the visualisations
     # TODO: fix warnings
