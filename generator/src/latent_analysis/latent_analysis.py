@@ -7,6 +7,7 @@ from umap import UMAP
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE 
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import silhouette_score
@@ -174,6 +175,31 @@ def visualize_umap(matrix: np.ndarray,
     
     return df_umap
 
+def visualize_tsne(matrix: np.ndarray, 
+                  cell_types: list, 
+                  palette: str = 'tab10',
+                  title: str = 't-SNE Visualization') -> pd.DataFrame:
+    """
+    Perform t-SNE dimensionality reduction and visualize results.
+    """
+    tsne = TSNE(n_components=2, random_state=42)
+    tsne_result = tsne.fit_transform(matrix)
+
+    df_tsne = pd.DataFrame(tsne_result, columns=['tSNE1', 'tSNE2'])
+    df_tsne['Cell_Type'] = cell_types
+
+    plt.figure(figsize=(10, 8))
+    sns.scatterplot(x='tSNE1', y='tSNE2', hue='Cell_Type',
+                   data=df_tsne, palette=palette, s=100,
+                   edgecolor='black', alpha=0.8)
+    plt.title(title, fontsize=14)
+    plt.legend(title='Cell Type', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+    
+    return df_tsne
+
+
 # Additional evaluation
 def evaluate_classification(matrix: np.ndarray, 
                           cell_types: list, 
@@ -275,6 +301,8 @@ if __name__ == "__main__":
                              title='PCA of Encoder Latent Space')
     latent_umap = visualize_umap(latent_matrix, cell_types,
                                title='UMAP of Encoder Latent Space')
+    latent_tsne = visualize_tsne(latent_matrix, cell_types,
+                               title='t-SNE of Encoder Latent Space')
 
     print("\nTransformer Space Analysis:")
     transformer_pca = visualize_pca(transformer_matrix, cell_types,
@@ -282,6 +310,8 @@ if __name__ == "__main__":
                                   title='PCA of Transformer Space')
     transformer_umap = visualize_umap(transformer_matrix, cell_types,
                                     title='UMAP of Transformer Space')
+    transformer_tsne = visualize_tsne(transformer_matrix, cell_types,
+                                title='t-SNE of Transformer Space')
 
     # Quantitative evaluation
     print("\nLatent Space Performance:")
@@ -297,3 +327,4 @@ if __name__ == "__main__":
     # TODO: add t-SNE
     # TODO: try out single frames instead of the videos
     # TODO: add the option to save the visualisations
+    # TODO: fix warnings
