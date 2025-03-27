@@ -45,7 +45,6 @@ def crop_to_field_of_view(image: torch.Tensor, upper_left: int = 73,
     """
     _, _, height, width = image.shape  # Pobranie wymiarów obrazu
 
-    # Sprawdzenie, czy obraz jest wystarczająco duży
     if height < lower_right or width < lower_left:
         raise IndexError("Image is too small to crop to the specified field of view.")
 
