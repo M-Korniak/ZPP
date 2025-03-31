@@ -84,11 +84,11 @@ def unnormalize_image(image: torch.Tensor) -> torch.Tensor:
     Returns:
     - torch.Tensor: The unnormalized image tensor.
     """
-    if image.ndim != 4:
-        raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
+    # if image.ndim != 4:
+    #     raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
     
-    if image.shape[1] != 3:
-        raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
+    # if image.shape[1] != 3:
+    #     raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
     mean = torch.tensor(MEANS, device=image.device).view(3, 1, 1)
     std = torch.tensor(STDS, device=image.device).view(3, 1, 1)
     return image * std + mean

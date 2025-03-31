@@ -138,7 +138,7 @@ class Trainer:
         self.device = device
         self.load_to_ram = load_to_ram
         self.extra_augmentation = extra_augmentation
-        self.data_folder
+        self.data_folder = data_folder
 
     def get_optimizer_and_scheduler(
             self, parameters: Iterable[torch.nn.Parameter]
