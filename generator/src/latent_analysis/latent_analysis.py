@@ -87,7 +87,8 @@ def load_pt_files(folder_path):
 def get_latent_representations(model: torch.nn.Module, 
                               input_tensors: dict,
                               metadata: dict,
-                              crop_size: int = 64) -> tuple:
+                              crop_size: int = 64,
+                              frames_num: int = None) -> tuple:
     """
     Collect latent representations from both encoder and transformer spaces.
     
@@ -96,6 +97,7 @@ def get_latent_representations(model: torch.nn.Module,
         input_tensors: Nested dictionary of input tensors
         metadata: Experiment metadata dictionary
         crop_size: Size for center cropping
+        frames_num: How many initial frames should be considered (if == None, take all of them)
         
     Returns:
         Tuple of (latent_matrix, transformer_matrix, cell_types)
@@ -110,8 +112,11 @@ def get_latent_representations(model: torch.nn.Module,
                 continue
                 
             # Process tensor
-            tensor = input_tensors[exp_id][fov]
-            tensor_for_eval = transformations_for_evaluation(tensor, crop_size=crop_size)
+            tensor_cut = input_tensors[exp_id][fov]
+            # Pick only the frames_num first frames
+            if frames_num:
+                tensor_cut = tensor_cut[:, :frames_num, ...]
+            tensor_for_eval = transformations_for_evaluation(tensor_cut, crop_size=crop_size)
             
             with torch.no_grad():
                 latent = model.get_encoder_latent_space(tensor_for_eval).flatten().cpu().numpy()
@@ -354,6 +359,41 @@ if __name__ == "__main__":
     evaluate_classification(transformer_matrix, cell_types)
     evaluate_silhouette(transformer_matrix, cell_types)
     evaluate_clustering(transformer_matrix, cell_types)
+    
+    # Trying out single-frame configuration
+    input_tensors = load_pt_files(input_data_path)
+    # Get single-frame latent representations
+    latent_vectors = []
+    cell_types = []
+    exp_ids_list = []
 
-    # TODO: try out single frames instead of the videos
+    latent_matrix, transformer_matrix, cell_types = get_latent_representations(
+        trained_model, input_tensors, extracted_metadata, frames_num=1
+    )
+    
+    # Let's try PCA
+    # Visualization
+    print("\nLatent Space Analysis, single frames:")
+    latent_pca = visualize_pca(latent_matrix, cell_types,
+                             n_components=5, 
+                             title='PCA of Encoder Latent Space, single frames',
+                             save_path=f"{results_path}/latent_pca_single.png")
+    print("\nTransformer Space Analysis, single frames:")
+    transformer_pca = visualize_pca(transformer_matrix, cell_types,
+                                  n_components=5,
+                                  title='PCA of Transformer Space, single frames',
+                                  save_path=f"{results_path}/transformer_pca_single.png")
+    
+    # Evaluation - for comparison
+    print("\nLatent Space Performance, single frames:")
+    evaluate_classification(latent_matrix, cell_types)
+    evaluate_silhouette(latent_matrix, cell_types)
+    evaluate_clustering(latent_matrix, cell_types)
+
+    print("\nTransformer Space Performance, single frames:")
+    evaluate_classification(transformer_matrix, cell_types)
+    evaluate_silhouette(transformer_matrix, cell_types)
+    evaluate_clustering(transformer_matrix, cell_types)
+    
+    # TODO: remove outliers for better visualisation
     # TODO: fix warnings
