@@ -6,6 +6,7 @@ import torch
 from umap import UMAP 
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy import stats
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE 
 from sklearn.linear_model import LogisticRegression
@@ -133,10 +134,19 @@ def visualize_pca(matrix: np.ndarray,
                  n_components: int = 2, 
                  palette: str = 'tab10',
                  title: str = 'PCA Visualization',
-                 save_path: str = None) -> pd.DataFrame:
+                 save_path: str = None,
+                 consider_outliers: bool = True,
+                 z_threshold: float = 5.0,
+                ) -> pd.DataFrame:
     """
     Perform PCA and visualize the first two principal components.
     """
+    if not consider_outliers:
+        z_scores = np.abs(stats.zscore(matrix))
+        mask = (z_scores < z_threshold).all(axis=1)
+        matrix = matrix[mask]
+        cell_types = [cell_types[i] for i in range(len(cell_types)) if mask[i]]
+    
     pca = PCA(n_components=n_components)
     pca_result = pca.fit_transform(matrix)
 
@@ -168,10 +178,19 @@ def visualize_umap(matrix: np.ndarray,
                   cell_types: list, 
                   palette: str = 'tab10',
                   title: str = 'UMAP Visualization',
-                  save_path: str = None) -> pd.DataFrame:
+                  save_path: str = None,
+                  consider_outliers: bool = True,
+                  z_threshold: float = 5.0,
+                  ) -> pd.DataFrame:
     """
     Perform UMAP dimensionality reduction and visualize results.
     """
+    if not consider_outliers:
+        z_scores = np.abs(stats.zscore(matrix))
+        mask = (z_scores < z_threshold).all(axis=1)
+        matrix = matrix[mask]
+        cell_types = [cell_types[i] for i in range(len(cell_types)) if mask[i]]
+
     reducer = UMAP(random_state=42) # for reproducibility
     umap_result = reducer.fit_transform(matrix)
 
@@ -200,11 +219,25 @@ def visualize_tsne(matrix: np.ndarray,
                   cell_types: list, 
                   palette: str = 'tab10',
                   title: str = 't-SNE Visualization',
-                  save_path: str = None) -> pd.DataFrame:
+                  save_path: str = None,
+                  consider_outliers: bool = True,
+                  z_threshold: float = 5.0,
+                  perplexity: int = 30,
+                  ) -> pd.DataFrame:
     """
     Perform t-SNE dimensionality reduction and visualize results.
     """
-    tsne = TSNE(n_components=2, random_state=42)
+    if not consider_outliers:
+        z_scores = np.abs(stats.zscore(matrix))
+        mask = (z_scores < z_threshold).all(axis=1)
+        matrix = matrix[mask]
+        cell_types = [cell_types[i] for i in range(len(cell_types)) if mask[i]]
+    
+    # Auto-adjust perplexity
+    n_samples = matrix.shape[0]
+    perplexity = min(perplexity, max(5, n_samples - 1))
+    
+    tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
     tsne_result = tsne.fit_transform(matrix)
 
     df_tsne = pd.DataFrame(tsne_result, columns=['tSNE1', 'tSNE2'])
@@ -299,6 +332,10 @@ if __name__ == "__main__":
     input_data_path = "../../data/tensors_to_load"
     path_to_model = "../../data/saved_model64_200_alternative.pth"
     results_path = "../../data/latent_analysis"
+    OUTLIERS = False # Change depending whether you want to see the results including outliers (True), or not (False)
+    outliers_path_add = ""
+    if not OUTLIERS:
+        outliers_path_add = "_no_outliers" 
     
     # Uncomment if you don't have the files with tensors in input_data_path yet
     # load_experiment_data_to_tensor()
@@ -329,25 +366,32 @@ if __name__ == "__main__":
     latent_pca = visualize_pca(latent_matrix, cell_types,
                              n_components=5, 
                              title='PCA of Encoder Latent Space',
-                             save_path=f"{results_path}/latent_pca.png")
+                             save_path=f"{results_path}/latent_pca{outliers_path_add}.png",
+                             consider_outliers=OUTLIERS)
     latent_umap = visualize_umap(latent_matrix, cell_types,
                                title='UMAP of Encoder Latent Space',
-                               save_path=f"{results_path}/latent_umap.png")
+                               save_path=f"{results_path}/latent_umap{outliers_path_add}.png",
+                               consider_outliers=OUTLIERS)
     latent_tsne = visualize_tsne(latent_matrix, cell_types,
                                title='t-SNE of Encoder Latent Space',
-                               save_path=f"{results_path}/latent_tsne.png")
+                               save_path=f"{results_path}/latent_tsne{outliers_path_add}.png",
+                               consider_outliers=OUTLIERS)
+                               
 
     print("\nTransformer Space Analysis:")
     transformer_pca = visualize_pca(transformer_matrix, cell_types,
                                   n_components=5,
                                   title='PCA of Transformer Space',
-                                  save_path=f"{results_path}/transformer_pca.png")
+                                  save_path=f"{results_path}/transformer_pca{outliers_path_add}.png",
+                                  consider_outliers=OUTLIERS)
     transformer_umap = visualize_umap(transformer_matrix, cell_types,
                                     title='UMAP of Transformer Space',
-                                    save_path=f"{results_path}/transformer_umap.png")
+                                    save_path=f"{results_path}/transformer_umap{outliers_path_add}.png",
+                                    consider_outliers=OUTLIERS)
     transformer_tsne = visualize_tsne(transformer_matrix, cell_types,
                                 title='t-SNE of Transformer Space',
-                                save_path=f"{results_path}/transformer_tsne.png")
+                                save_path=f"{results_path}/transformer_tsne{outliers_path_add}.png",
+                                consider_outliers=OUTLIERS)
 
     # Quantitative evaluation
     print("\nLatent Space Performance:")
@@ -361,7 +405,6 @@ if __name__ == "__main__":
     evaluate_clustering(transformer_matrix, cell_types)
     
     # Trying out single-frame configuration
-    input_tensors = load_pt_files(input_data_path)
     # Get single-frame latent representations
     latent_vectors = []
     cell_types = []
@@ -370,19 +413,23 @@ if __name__ == "__main__":
     latent_matrix, transformer_matrix, cell_types = get_latent_representations(
         trained_model, input_tensors, extracted_metadata, frames_num=1
     )
-    
-    # Let's try PCA
-    # Visualization
+    # Let's try visualisation again
     print("\nLatent Space Analysis, single frames:")
     latent_pca = visualize_pca(latent_matrix, cell_types,
                              n_components=5, 
                              title='PCA of Encoder Latent Space, single frames',
-                             save_path=f"{results_path}/latent_pca_single.png")
+                             save_path=f"{results_path}/latent_pca_single{outliers_path_add}.png",
+                             consider_outliers=OUTLIERS)
     print("\nTransformer Space Analysis, single frames:")
     transformer_pca = visualize_pca(transformer_matrix, cell_types,
                                   n_components=5,
                                   title='PCA of Transformer Space, single frames',
-                                  save_path=f"{results_path}/transformer_pca_single.png")
+                                  save_path=f"{results_path}/transformer_pca_single{outliers_path_add}.png",
+                                  consider_outliers=OUTLIERS)
+    transformer_tsne = visualize_tsne(transformer_matrix, cell_types,
+                                title='t-SNE of Transformer Space',
+                                save_path=f"{results_path}/transformer_tsne_single{outliers_path_add}.png",
+                                consider_outliers=OUTLIERS)
     
     # Evaluation - for comparison
     print("\nLatent Space Performance, single frames:")
@@ -395,5 +442,4 @@ if __name__ == "__main__":
     evaluate_silhouette(transformer_matrix, cell_types)
     evaluate_clustering(transformer_matrix, cell_types)
     
-    # TODO: remove outliers for better visualisation
     # TODO: fix warnings
