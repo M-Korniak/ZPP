@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 import os
-
+import argparse
 import src.utils.utils as utils
 import src.visualizer.visualizer as visualizer
 import src.transformations.transformations as transformations
@@ -171,7 +171,26 @@ def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
 
     return train_dataloader, test_dataloader
 
+def main():
+    parser = argparse.ArgumentParser(description='Process and visualize tensor data.')
+    parser.add_argument('--tensor', type=str, help='Path to tensor file to visualize')
+    parser.add_argument('--load-data', action='store_true', help='Load and process experiment data')
+    parser.add_argument('--experiments', type=int, nargs='+', default=[1, 2, 3, 4, 5, 6],
+                        help='List of experiments to process')
+    parser.add_argument('--num-fov', type=int, default=1,
+                        help='Number of fields of view per experiment')
+    
+    args = parser.parse_args()
+    
+    if args.load_data:
+        print("Loading and processing experiment data...")
+        load_experiment_data_to_tensor(experiments=args.experiments, num_fields_of_view=args.num_fov)
+        print("Data processing completed.")
+    
+    if args.tensor:
+        print(f"Visualizing tensor from {args.tensor}")
+        my_tensor = torch.load(args.tensor)
+        visualizer.visualize_tensor_image(my_tensor[0][0])
 
 if __name__ == "__main__":
-    my_tensor = torch.load("../../data/tensors_to_load/experiments_tensor_exp_1_fov_1.pt")
-    visualizer.visualize_tensor_image(my_tensor[0][0])
+    main()
