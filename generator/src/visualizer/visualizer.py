@@ -45,24 +45,26 @@ def visualize_tensor_images_as_gif(image_tensors: torch.tensor, path: str = "../
 
 
 def visualize_simulation(simulation: pd.DataFrame, number_of_frames: int = 258,
-                         path: str = "../../data/simulation.gif") -> None:
+                         path: str = "../../data/simulation.gif",
+                         temp_frames_dir: str = "../../data/temp_frames") -> None:
     """
     Visualizes the simulation of nuclei movement and ERK values over time.
 
-        Args:
-        - simulation (pd.DataFrame): The DataFrame containing the simulation data.
-        - number_of_frames (int): The number of frames to simulate.
+    Args:
+    - simulation (pd.DataFrame): The DataFrame containing the simulation data.
+    - number_of_frames (int): The number of frames to simulate.
+    - path (str): Path to save the final GIF.
+    - temp_frames_dir (str): Directory to store temporary frames.
 
-        Returns:
-        - None
+    Returns:
+    - None
     """
     marker = 'ERKKTR_ratio'
 
     min_value = np.log(0.4)
     max_value = np.log(2.7)
 
-    output_dir = "../../data/temp_frames"
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(temp_frames_dir, exist_ok=True)
     frames = []
 
     colors = ['darkblue', 'blue', 'turquoise', 'yellow', 'orange', 'red']
@@ -90,7 +92,7 @@ def visualize_simulation(simulation: pd.DataFrame, number_of_frames: int = 258,
 
         cbar = plt.colorbar(sc, label=f'Intensity ({marker})')
 
-        filename = f"../../data/temp_frames/frame_{t:03d}.png"
+        filename = os.path.join(temp_frames_dir, f"frame_{t:03d}.png")
         plt.savefig(filename, transparent=False)
         frames.append(filename)
         plt.close()
@@ -103,7 +105,8 @@ def visualize_simulation(simulation: pd.DataFrame, number_of_frames: int = 258,
     for frame in frames:
         os.remove(frame)
 
-    os.rmdir(output_dir)
+    os.rmdir(temp_frames_dir)
+
 
 
 
