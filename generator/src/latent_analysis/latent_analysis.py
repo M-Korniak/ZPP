@@ -149,6 +149,9 @@ def visualize_pca(matrix: np.ndarray,
     
     pca = PCA(n_components=n_components)
     pca_result = pca.fit_transform(matrix)
+    
+    # Calculate explained variance for the first two components
+    explained_var = pca.explained_variance_ratio_ * 100
 
     df_pca = pd.DataFrame(pca_result, 
                          columns=[f'PC{i+1}' for i in range(n_components)])
@@ -159,8 +162,8 @@ def visualize_pca(matrix: np.ndarray,
                    data=df_pca, palette=palette, s=100,
                    edgecolor='black', alpha=0.8)
     plt.title(title, fontsize=14)
-    plt.xlabel('Principal Component 1', fontsize=12)
-    plt.ylabel('Principal Component 2', fontsize=12)
+    plt.xlabel(f'PC1 ({explained_var[0]:.1f}% explained variance)', fontsize=12)
+    plt.ylabel(f'PC2 ({explained_var[1]:.1f}% explained variance)', fontsize=12)
     plt.legend(title='Cell Type', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     
@@ -191,7 +194,7 @@ def visualize_umap(matrix: np.ndarray,
         matrix = matrix[mask]
         cell_types = [cell_types[i] for i in range(len(cell_types)) if mask[i]]
 
-    reducer = UMAP(random_state=42) # for reproducibility
+    reducer = UMAP(random_state=42, n_jobs=1) # for reproducibility
     umap_result = reducer.fit_transform(matrix)
 
     df_umap = pd.DataFrame(umap_result, columns=['UMAP1', 'UMAP2'])
@@ -360,6 +363,8 @@ if __name__ == "__main__":
     latent_matrix, transformer_matrix, cell_types = get_latent_representations(
         trained_model, input_tensors, extracted_metadata
     )
+    assert not np.isnan(latent_matrix).any(), "NaNs in latent matrix!"
+    assert np.isfinite(latent_matrix).all(), "Infs in latent matrix!"
 
     # Visualization
     print("\nLatent Space Analysis:")
@@ -405,7 +410,6 @@ if __name__ == "__main__":
     evaluate_clustering(transformer_matrix, cell_types)
     
     # Trying out single-frame configuration
-    # Get single-frame latent representations
     latent_vectors = []
     cell_types = []
     exp_ids_list = []
@@ -441,5 +445,3 @@ if __name__ == "__main__":
     evaluate_classification(transformer_matrix, cell_types)
     evaluate_silhouette(transformer_matrix, cell_types)
     evaluate_clustering(transformer_matrix, cell_types)
-    
-    # TODO: fix warnings
