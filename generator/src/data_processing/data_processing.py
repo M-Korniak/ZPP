@@ -67,6 +67,58 @@ def load_experiment_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6),
         os.rmdir("../../data/experiments")
 
 
+@torch.no_grad()
+def load_tabular_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6)):
+    """
+    Transforms tabular data into tensors with shape (1, S, T, 3) where:
+    - S is the number of sites (frames)
+    - T is the maximum track_id in the experiment
+    - 3 features: ERKKTR_ratio, X, Y coordinates
+
+    Missing track_ids in a site are filled with -1.0.
+    ERKKTR_ratio is clipped to [0.4, 2.7] to avoid outliers
+    Saves each experiment's tensor to a file.
+
+    Args:
+    - experiments (Tuple[int]): Experiments to process. Defaults to all (1-6).
+    """
+    # Load and preprocess data
+    df = utils.unpack_and_read('../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz')
+    df['ERKKTR_ratio'] = np.clip(df['ERKKTR_ratio'], 0.4, 2.7)
+    df = df[df['Exp_ID'].isin(experiments)]
+
+    output_dir = "../../data/tensors_to_load"
+    os.makedirs(output_dir, exist_ok=True)
+
+    max_track_id = df['track_id'].max()
+
+    for experiment in experiments:
+        exp_data = df[df['Exp_ID'] == experiment]
+
+        if exp_data.empty:
+            continue
+
+        num_frames = len(exp_data['Image_Metadata_T'].unique())
+
+        # Initialize tensor with -1.0
+        tensor = torch.full((1, num_frames, max_track_id, 3), -1.0, dtype=torch.float16)
+
+        for frame_idx in range(num_frames):
+            site_data = exp_data[exp_data['Image_Metadata_T'] == frame_idx]
+            track_map = {row['track_id']: row for _, row in site_data.iterrows()}
+
+            for tid in range(1, max_track_id + 1):
+                if tid in track_map:
+                    row = track_map[tid]
+                    tensor[0, frame_idx, tid - 1, 0] = row['ERKKTR_ratio']
+                    tensor[0, frame_idx, tid - 1, 1] = row['objNuclei_Location_Center_X']
+                    tensor[0, frame_idx, tid - 1, 2] = row['objNuclei_Location_Center_Y']
+
+        # Save the tensor
+        save_path = os.path.join(output_dir, f"experiments_tensor_tabular_{experiment}.pt")
+        torch.save(tensor, save_path)
+
+
 class TensorDataset(Dataset):
     def __init__(self, data_folder: str = "../../data/tensors_to_load/",
                  load_to_ram: bool = False,
@@ -152,5 +204,6 @@ def get_dataloader(data_folder: str = "../../data/tensors_to_load/",
 
 
 if __name__ == "__main__":
+    #load_tabular_data_to_tensor()
     my_tensor = torch.load("../../data/tensors_to_load/experiments_tensor_exp_1_fov_1.pt")
     visualizer.visualize_tensor_image(my_tensor[0][0])
