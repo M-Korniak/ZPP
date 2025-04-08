@@ -456,7 +456,7 @@ if __name__ == "__main__":
                                
 
     print("\nTransformer Space Analysis:")
-    transformer_pca = visualize_pca(transformer_matrix, cell_types,
+    transformer_pca = visualize_pca(transformer_matrix, cell_types, exp_ids,
                                   n_components=5,
                                   title='PCA of Transformer Space',
                                   save_path=f"{results_path}/transformer_pca{outliers_path_add}.png",
@@ -497,7 +497,7 @@ if __name__ == "__main__":
                              save_path=f"{results_path}/latent_pca_single{outliers_path_add}.png",
                              consider_outliers=OUTLIERS)
     print("\nTransformer Space Analysis, single frames:")
-    transformer_pca = visualize_pca(transformer_matrix, cell_types,
+    transformer_pca = visualize_pca(transformer_matrix, cell_types, exp_ids,
                                   n_components=5,
                                   title='PCA of Transformer Space, single frames',
                                   save_path=f"{results_path}/transformer_pca_single{outliers_path_add}.png",
