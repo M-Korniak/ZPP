@@ -7,6 +7,7 @@ from umap import UMAP
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
+from typing import Optional, List
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE 
 from sklearn.linear_model import LogisticRegression
@@ -106,6 +107,7 @@ def get_latent_representations(model: torch.nn.Module,
     latent_vectors = []
     transformer_vectors = []
     cell_types = []
+    exp_ids = []
     
     for exp_id in input_tensors:
         for fov in input_tensors[exp_id]:
@@ -126,54 +128,122 @@ def get_latent_representations(model: torch.nn.Module,
             latent_vectors.append(latent)
             transformer_vectors.append(transformer)
             cell_types.append(metadata[exp_id][fov])
+            exp_ids.append(exp_id)
     
-    return np.array(latent_vectors), np.array(transformer_vectors), cell_types
+    return np.array(latent_vectors), np.array(transformer_vectors), cell_types, exp_ids
 
 def visualize_pca(matrix: np.ndarray, 
                  cell_types: list, 
+                 experiment_ids: list,
                  n_components: int = 2, 
                  palette: str = 'tab10',
                  title: str = 'PCA Visualization',
-                 save_path: str = None,
+                 save_path: Optional[str] = None,
                  consider_outliers: bool = True,
-                 z_threshold: float = 5.0,
+                 z_threshold: float = 5.0
                 ) -> pd.DataFrame:
     """
-    Perform PCA and visualize the first two principal components.
+    Perform PCA and visualize the first two principal components with centroid markers.
     """
+    # Outlier removal
     if not consider_outliers:
         z_scores = np.abs(stats.zscore(matrix))
         mask = (z_scores < z_threshold).all(axis=1)
         matrix = matrix[mask]
-        cell_types = [cell_types[i] for i in range(len(cell_types)) if mask[i]]
+        cell_types = [cell_types[i] for i, m in enumerate(mask) if m]
+        experiment_ids = [experiment_ids[i] for i, m in enumerate(mask) if m]
     
+    # Perform PCA
     pca = PCA(n_components=n_components)
     pca_result = pca.fit_transform(matrix)
-    
-    # Calculate explained variance for the first two components
     explained_var = pca.explained_variance_ratio_ * 100
-
-    df_pca = pd.DataFrame(pca_result, 
-                         columns=[f'PC{i+1}' for i in range(n_components)])
+    
+    # Create DataFrame
+    df_pca = pd.DataFrame(
+        pca_result,
+        columns=[f'PC{i+1}' for i in range(n_components)]
+    )
     df_pca['Cell_Type'] = cell_types
-
-    plt.figure(figsize=(10, 8))
-    sns.scatterplot(x='PC1', y='PC2', hue='Cell_Type',
-                   data=df_pca, palette=palette, s=100,
-                   edgecolor='black', alpha=0.8)
+    df_pca['Experiment_ID'] = experiment_ids
+    
+    # Find centroid-proximal points
+    centroid_points = []
+    unique_cell_types = df_pca['Cell_Type'].unique()
+    
+    for ct in unique_cell_types:
+        group = df_pca[df_pca['Cell_Type'] == ct]
+        centroid = group[['PC1', 'PC2']].mean().values
+        distances = np.linalg.norm(group[['PC1', 'PC2']] - centroid, axis=1)
+        closest_idx = np.argmin(distances)
+        centroid_row = group.iloc[closest_idx]
+        centroid_points.append({
+            'PC1': centroid_row['PC1'],
+            'PC2': centroid_row['PC2'],
+            'Cell_Type': ct,
+            'Experiment_ID': centroid_row['Experiment_ID']
+        })
+    
+    df_centroids = pd.DataFrame(centroid_points)
+    
+    # Create plot
+    plt.figure(figsize=(12, 8))
+    ax = plt.gca()
+    
+    # Plot regular points
+    sns.scatterplot(
+        x='PC1', y='PC2', hue='Cell_Type',
+        data=df_pca, palette=palette, s=100,
+        edgecolor='black', alpha=0.8, ax=ax,
+        legend=False  # We'll create custom legend
+    )
+    
+    # Plot centroid points with triangles
+    sns.scatterplot(
+        x='PC1', y='PC2', hue='Cell_Type',
+        data=df_centroids, palette=palette, s=200,
+        marker='^', edgecolor='black', linewidth=1.5,
+        ax=ax, legend=False
+    )
+    
+    # Create legends
+    legend_elements = []
+    # Regular points legend
+    for idx, ct in enumerate(unique_cell_types):
+        legend_elements.append(plt.Line2D(
+            [0], [0], marker='o', color='w',
+            markerfacecolor=sns.color_palette(palette)[idx],
+            markersize=10, label=ct
+        ))
+    # Centroid points legend
+    for idx, row in df_centroids.iterrows():
+        legend_elements.append(plt.Line2D(
+            [0], [0], marker='^', color='w',
+            markerfacecolor=sns.color_palette(palette)[idx],
+            markersize=12, markeredgecolor='black',
+            label=f"{row['Cell_Type']} (ID: {row['Experiment_ID']})"
+        ))
+    
+    plt.legend(
+        handles=legend_elements,
+        title='Cell Types & Centroids',
+        bbox_to_anchor=(1.05, 1),
+        loc='upper left'
+    )
+    
     plt.title(title, fontsize=14)
     plt.xlabel(f'PC1 ({explained_var[0]:.1f}% explained variance)', fontsize=12)
     plt.ylabel(f'PC2 ({explained_var[1]:.1f}% explained variance)', fontsize=12)
-    plt.legend(title='Cell Type', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     
+    # Handle saving/showing
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
-        print("Saved visualisation to ",save_path)
+        print(f"Saved visualization to {save_path}")
     else:
         plt.show()
+        plt.close()
     
     return df_pca
 
@@ -215,6 +285,7 @@ def visualize_umap(matrix: np.ndarray,
         print("Saved visualisation to ",save_path)
     else:
         plt.show()
+        plt.close()
     
     return df_umap
 
@@ -261,6 +332,7 @@ def visualize_tsne(matrix: np.ndarray,
         print("Saved visualisation to ",save_path)
     else:
         plt.show()
+        plt.close()
     
     return df_tsne
 
@@ -358,9 +430,9 @@ if __name__ == "__main__":
     # Get latent representations
     latent_vectors = []
     cell_types = []
-    exp_ids_list = []
+    exp_ids = []
 
-    latent_matrix, transformer_matrix, cell_types = get_latent_representations(
+    latent_matrix, transformer_matrix, cell_types, exp_ids = get_latent_representations(
         trained_model, input_tensors, extracted_metadata
     )
     assert not np.isnan(latent_matrix).any(), "NaNs in latent matrix!"
@@ -368,7 +440,7 @@ if __name__ == "__main__":
 
     # Visualization
     print("\nLatent Space Analysis:")
-    latent_pca = visualize_pca(latent_matrix, cell_types,
+    latent_pca = visualize_pca(latent_matrix, cell_types, exp_ids,
                              n_components=5, 
                              title='PCA of Encoder Latent Space',
                              save_path=f"{results_path}/latent_pca{outliers_path_add}.png",
@@ -412,14 +484,14 @@ if __name__ == "__main__":
     # Trying out single-frame configuration
     latent_vectors = []
     cell_types = []
-    exp_ids_list = []
+    exp_ids = []
 
-    latent_matrix, transformer_matrix, cell_types = get_latent_representations(
+    latent_matrix, transformer_matrix, cell_types, exp_ids = get_latent_representations(
         trained_model, input_tensors, extracted_metadata, frames_num=1
     )
     # Let's try visualisation again
     print("\nLatent Space Analysis, single frames:")
-    latent_pca = visualize_pca(latent_matrix, cell_types,
+    latent_pca = visualize_pca(latent_matrix, cell_types, exp_ids,
                              n_components=5, 
                              title='PCA of Encoder Latent Space, single frames',
                              save_path=f"{results_path}/latent_pca_single{outliers_path_add}.png",
