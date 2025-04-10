@@ -71,16 +71,16 @@ def load_experiment_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6),
 def load_tabular_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6)):
     """
     Transforms tabular data into tensors with shape (1, S, T, 3) where:
-    - S is the number of sites (frames)
+    - S is the number of frames
     - T is the maximum track_id in the experiment
     - 3 features: ERKKTR_ratio, X, Y coordinates
 
     Missing track_ids in a site are filled with -1.0.
     ERKKTR_ratio is clipped to [0.4, 2.7] to avoid outliers
-    Saves each experiment's tensor to a file.
+    Saves each field of view as a separate tensor file
 
     Args:
-    - experiments (Tuple[int]): Experiments to process. Defaults to all (1-6).
+    - experiments Tuple[int]: Experiments to include in tensor. Default (1, 2, 3, 4, 5, 6) - All experiments
     """
     # Load and preprocess data
     df = utils.unpack_and_read('../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz')
@@ -94,29 +94,31 @@ def load_tabular_data_to_tensor(experiments: Tuple[int] = (1, 2, 3, 4, 5, 6)):
 
     for experiment in experiments:
         exp_data = df[df['Exp_ID'] == experiment]
-
         if exp_data.empty:
             continue
 
-        num_frames = len(exp_data['Image_Metadata_T'].unique())
+        fields_of_view = np.sort(exp_data['Image_Metadata_Site'].unique())
+        for field_of_view in fields_of_view:
+            fov_data = exp_data[exp_data['Image_Metadata_Site'] == field_of_view]
+            frames_count = fov_data['Image_Metadata_T'].max() + 1
 
-        # Initialize tensor with -1.0
-        tensor = torch.full((1, num_frames, max_track_id, 3), -1.0, dtype=torch.float16)
+            # Initialize tensor with -1.0
+            tensor = torch.full((1, frames_count, max_track_id, 3), -1.0, dtype=torch.float16)
 
-        for frame_idx in range(num_frames):
-            site_data = exp_data[exp_data['Image_Metadata_T'] == frame_idx]
-            track_map = {row['track_id']: row for _, row in site_data.iterrows()}
+            for frame_idx in range(frames_count):
+                frame_data = fov_data[fov_data['Image_Metadata_T'] == frame_idx]
+                track_map = {row['track_id']: row for _, row in frame_data.iterrows()}
 
-            for tid in range(1, max_track_id + 1):
-                if tid in track_map:
-                    row = track_map[tid]
-                    tensor[0, frame_idx, tid - 1, 0] = row['ERKKTR_ratio']
-                    tensor[0, frame_idx, tid - 1, 1] = row['objNuclei_Location_Center_X']
-                    tensor[0, frame_idx, tid - 1, 2] = row['objNuclei_Location_Center_Y']
+                for tid in range(1, max_track_id + 1):
+                    if tid in track_map:
+                        row = track_map[tid]
+                        tensor[0, frame_idx, tid - 1, 0] = row['ERKKTR_ratio']
+                        tensor[0, frame_idx, tid - 1, 1] = row['objNuclei_Location_Center_X']
+                        tensor[0, frame_idx, tid - 1, 2] = row['objNuclei_Location_Center_Y']
 
-        # Save the tensor
-        save_path = os.path.join(output_dir, f"experiments_tensor_tabular_{experiment}.pt")
-        torch.save(tensor, save_path)
+            # Save the tensor
+            save_path = os.path.join(output_dir, f"experiments_tensor_tabular_exp_{experiment}_fov_{field_of_view}.pt")
+            torch.save(tensor, save_path)
 
 
 class TensorDataset(Dataset):
