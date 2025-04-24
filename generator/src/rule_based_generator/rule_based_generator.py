@@ -14,9 +14,17 @@ elif torch.backends.mps.is_available():
 else:
     DEVICE = torch.device("cpu")
 
+STD_DEVIATIONS = {
+    'WT': 0.4336,
+    'AKT1_E17K': 0.3350,
+    'PIK3CA_E545K': 0.6399,
+    'PIK3CA_H1047R': 0.7221,
+    "PTEN_del": 0.4649
+}
+
 
 class RuleBasedGenerator:
-    def __init__(self, df_first_frame: pd.DataFrame, number_of_frames: int = 258):
+    def __init__(self, df_first_frame: pd.DataFrame, number_of_frames: int = 258, mutation_type: str = 'WT'):
         """
         Initializes the Generator object with the first frame of data and the number of frames to simulate.
         :param df_first_frame:
@@ -24,6 +32,9 @@ class RuleBasedGenerator:
         """
         self.df_first_frame = df_first_frame
         self.number_of_frames = number_of_frames
+        self.mutation_type = mutation_type
+        if mutation_type not in STD_DEVIATIONS.keys():
+            raise ValueError(f"Mutation type {mutation_type} not recognized. Available types are: {list(STD_DEVIATIONS.keys())}")
 
     def generate_next_move(self, current_frame: pd.DataFrame) -> pd.DataFrame:
         """
@@ -35,9 +46,9 @@ class RuleBasedGenerator:
         Returns:
         - pd.DataFrame: The updated DataFrame with modified X and Y coordinates for the nuclei.
         """
-        current_frame['objNuclei_Location_Center_X'] += np.random.normal(0, 0.43, size=current_frame[
+        current_frame['objNuclei_Location_Center_X'] += np.random.normal(0, STD_DEVIATIONS[self.mutation_type], size=current_frame[
             'objNuclei_Location_Center_X'].shape)
-        current_frame['objNuclei_Location_Center_Y'] += np.random.normal(0, 0.43, size=current_frame[
+        current_frame['objNuclei_Location_Center_Y'] += np.random.normal(0, STD_DEVIATIONS[self.mutation_type], size=current_frame[
             'objNuclei_Location_Center_Y'].shape)
         return current_frame
 
@@ -148,6 +159,6 @@ if __name__ == "__main__":
     df = utils.unpack_and_read('../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz')
     df_first_frame = df[(df['Image_Metadata_Site'] == 1) & (df['Exp_ID'] == 1) & (df['Image_Metadata_T'] == 0)][
         ['track_id', 'objNuclei_Location_Center_X', 'objNuclei_Location_Center_Y', 'ERKKTR_ratio', 'Image_Metadata_T']]
-    generator = RuleBasedGenerator(df_first_frame=df_first_frame)
+    generator = RuleBasedGenerator(df_first_frame=df_first_frame, mutation_type='PTEN_del')
     video_data = generator.generate_video()
     visualizer.visualize_simulation(video_data)
