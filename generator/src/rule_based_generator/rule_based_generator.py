@@ -27,8 +27,9 @@ class RuleBasedGenerator:
     def __init__(self, df_first_frame: pd.DataFrame, number_of_frames: int = 258, mutation_type: str = 'WT'):
         """
         Initializes the Generator object with the first frame of data and the number of frames to simulate.
-        :param df_first_frame:
-        :param number_of_frames:
+        :param df_first_frame: The DataFrame containing the first frame of data with position and ERK values.
+        :param number_of_frames: The total number of frames to simulate. Defaults to 258.
+        :param mutation_type: The type of mutation to simulate. It determines the standard deviation of the noise added to the X and Y coordinates.
         """
         self.df_first_frame = df_first_frame
         self.number_of_frames = number_of_frames
@@ -128,7 +129,7 @@ class RuleBasedGenerator:
 
         return torch.tensor(adjacency_matrix, device=DEVICE)
 
-    def generate_video(self):
+    def generate_time_lapse(self):
         """
             Generates a simulated video of tracked nuclei over multiple frames, updating their positions and ERK values.
 
@@ -160,5 +161,5 @@ if __name__ == "__main__":
     df_first_frame = df[(df['Image_Metadata_Site'] == 1) & (df['Exp_ID'] == 1) & (df['Image_Metadata_T'] == 0)][
         ['track_id', 'objNuclei_Location_Center_X', 'objNuclei_Location_Center_Y', 'ERKKTR_ratio', 'Image_Metadata_T']]
     generator = RuleBasedGenerator(df_first_frame=df_first_frame, mutation_type='PTEN_del')
-    video_data = generator.generate_video()
+    video_data = generator.generate_time_lapse()
     visualizer.visualize_simulation(video_data)
