@@ -24,6 +24,10 @@ def main():
     parser.add_argument('--visualize', action='store_true',
                        help='Generate visualization of the simulation')
     
+    parser.add_argument('--mutation-type', type=str, default='WT',
+                    choices=list(RuleBasedGenerator.STD_DEVIATIONS.keys()),
+                    help='Mutation type to simulate (default: WT)')
+
     args = parser.parse_args()
 
     # Load and prepare data
@@ -36,7 +40,9 @@ def main():
     
     # Generate video
     generator = RuleBasedGenerator(df_first_frame=df_first_frame, 
-                                 number_of_frames=args.frames)
+                                 number_of_frames=args.frames,
+                                 mutation_type=args.mutation_type
+                                 )
     video_data = generator.generate_video()
     
     # Save output if requested
