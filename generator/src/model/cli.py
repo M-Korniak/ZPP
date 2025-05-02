@@ -3,6 +3,7 @@ import argparse
 import torch
 from .model import ModelArgs, SpatioTemporalTransformer, AutoEncoder
 import src.transformations.transformations as transformations
+import os
 
 def main():
     parser = argparse.ArgumentParser(description='Initialize and test a model with custom parameters')
@@ -39,6 +40,18 @@ def main():
 
     args = parser.parse_args()
 
+    # Validate that all convolution-related lists have the same length
+    conv_lists = [args.out_channels, args.kernel_sizes, args.strides, args.paddings]
+    list_lengths = list(map(len, conv_lists))
+    if len(set(list_lengths)) != 1:
+        raise ValueError(
+            f"Convolutional parameter lists must be of the same length. Got lengths: {list_lengths}"
+        )
+
+    if args.dim % args.n_heads != 0:
+        raise ValueError(f"dim ({args.dim}) must be divisible by n_heads ({args.n_heads})")
+
+
     # Create model args
     model_args = ModelArgs(
         dim=args.dim,
@@ -74,6 +87,8 @@ def main():
         model = model.to(device)
         
         if args.gif_path:
+            if not os.path.isfile(args.gif_path):
+                raise FileNotFoundError(f"GIF file not found: {args.gif_path}")
             frames = transformations.transform_gif_to_tensor(args.gif_path)
         else:
             # Create dummy input
