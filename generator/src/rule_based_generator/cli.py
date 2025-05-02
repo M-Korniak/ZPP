@@ -43,7 +43,7 @@ def main():
                                  number_of_frames=args.frames,
                                  mutation_type=args.mutation_type
                                  )
-    video_data = generator.generate_video()
+    video_data = generator.generate_time_lapse()
     
     # Save output if requested
     if args.output:
