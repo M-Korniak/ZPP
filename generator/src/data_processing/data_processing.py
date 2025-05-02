@@ -23,7 +23,6 @@ def load_experiment_data_to_tensor(
     data_path: str = "../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz",
     experiments_path: str = "../../data/experiments",
     tensor_path: str = "../../data/tensors_to_load",
-    num_fields_of_view: int = 1,
     custom_gif_path: Optional[str] = None
 ):
     """
@@ -41,7 +40,6 @@ def load_experiment_data_to_tensor(
     - num_fields_of_view (int): Number of fields of view to process per experiment. Default 1.
     - custom_gif_path (Optional[str]): Custom path for saving GIFs. If None, uses default path. Default None.
     """
-    # Tworzenie katalogów jeśli nie istnieją
     os.makedirs(experiments_path, exist_ok=True)
     os.makedirs(tensor_path, exist_ok=True)
     if custom_gif_path:
@@ -56,7 +54,7 @@ def load_experiment_data_to_tensor(
         fields_of_view = np.sort(df_experiment['Image_Metadata_Site'].unique())
         experiments_tensor = torch.zeros(1, 258, 3, 256, 256, device=DEVICE, dtype=torch.float16)
 
-        for field_of_view in fields_of_view[0:num_fields_of_view]:
+        for field_of_view in fields_of_view:
             df_fov = df_experiment[df_experiment['Image_Metadata_Site'] == field_of_view]
             frames_count = df_fov['Image_Metadata_T'].max() + 1
             
@@ -85,7 +83,7 @@ def load_experiment_data_to_tensor(
         try:
             os.rmdir(experiments_path)
         except OSError:
-            pass  # Ignoruj jeśli katalog nie jest pusty
+            pass
 
 
 class TensorDataset(Dataset):
@@ -177,20 +175,37 @@ def main():
     parser.add_argument('--load-data', action='store_true', help='Load and process experiment data')
     parser.add_argument('--experiments', type=int, nargs='+', default=[1, 2, 3, 4, 5, 6],
                         help='List of experiments to process')
-    parser.add_argument('--num-fov', type=int, default=1,
-                        help='Number of fields of view per experiment')
+
+    parser.add_argument('--data-path', type=str,
+                        default='../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz',
+                        help='Path to input CSV file')
+    parser.add_argument('--tensor-path', type=str,
+                        default='../../data/tensors_to_load',
+                        help='Path to save or load tensor files')
+    parser.add_argument('--custom-gif-path', type=str, default=None,
+                        help='Custom path for saving GIFs (optional)')
+    parser.add_argument('--visualize', action='store_true',
+                        help='Flag to visualize first image from loaded tensor')
     
     args = parser.parse_args()
     
     if args.load_data:
         print("Loading and processing experiment data...")
-        load_experiment_data_to_tensor(experiments=args.experiments, num_fields_of_view=args.num_fov)
+        load_experiment_data_to_tensor(
+            experiments=tuple(args.experiments),
+            data_path=args.data_path,
+            tensor_path=args.tensor_path,
+            custom_gif_path=args.custom_gif_path
+        )
         print("Data processing completed.")
-    
+
     if args.tensor:
-        print(f"Visualizing tensor from {args.tensor}")
+        print(f"Loading tensor from {args.tensor}")
         my_tensor = torch.load(args.tensor)
-        visualizer.visualize_tensor_image(my_tensor[0][0])
+
+        if args.visualize:
+            print("Visualizing first image in tensor...")
+            visualizer.visualize_tensor_image(my_tensor[0][0])
 
 if __name__ == "__main__":
     main()
