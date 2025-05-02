@@ -1,6 +1,7 @@
 from typing import Tuple, Optional, Callable
 import numpy as np
 import torch
+import shutil
 from torch.utils.data import Dataset, DataLoader, random_split
 import os
 import argparse
@@ -80,9 +81,9 @@ def load_experiment_data_to_tensor(
 
     if not maintain_experiment_visualization and os.path.exists(experiments_path):
         try:
-            os.rmdir(experiments_path)
-        except OSError:
-            pass
+            shutil.rmtree(experiments_path)
+        except Exception as e:
+            print(f"Nie udało się usunąć folderu {experiments_path}: {e}")
 
 
 class TensorDataset(Dataset):
