@@ -13,7 +13,7 @@ authors = [
 ]
 description = "Generator for biological experiments"
 readme = "README.md"
-license = "MIT"  # Simple SPDX identifier
+license = "MIT"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3.10",
@@ -48,7 +48,6 @@ packages = [
     "src.utils",
     "src.visualizer"
 ]
-# package-dir = {"" = "src"}  # Wymagane gdy jawnie wymieniasz pakiety
 [project.scripts]
 process-tensor = "src.data_processing.data_processing:main"
 train-model = "src.trainer.cli:train_model"
