@@ -37,7 +37,6 @@ def load_experiment_data_to_tensor(
     - data_path (str): Path to the input CSV file. Default "../../data/single-cell-tracks_exp1-6_noErbB2.csv.gz".
     - experiments_path (str): Path to save temporary experiment visualizations. Default "../../data/experiments".
     - tensor_path (str): Path to save the resulting tensors. Default "../../data/tensors_to_load".
-    - num_fields_of_view (int): Number of fields of view to process per experiment. Default 1.
     - custom_gif_path (Optional[str]): Custom path for saving GIFs. If None, uses default path. Default None.
     """
     os.makedirs(experiments_path, exist_ok=True)
