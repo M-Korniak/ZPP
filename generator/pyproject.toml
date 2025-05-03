@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "generator_aj429467"
 version = "0.2.1"
 authors = [
-    {name = "Adam Jaskuła", email = "aj429467@gmail.com"},
+    {name = "Adam Jaskuła", email = "aj429467@students.mimuw.edu.pl"},
     {name = "Michał Korniak", email = "mk448287@students.mimuw.edu.pl"},
     {name = "Michał Maszkowski", email = "todo@email.com"},
     {name = "Zuz Mrozek?", email = "todo@email.com"}
