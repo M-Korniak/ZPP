@@ -128,7 +128,8 @@ class Trainer:
     def __init__(self, lr: float = 2e-4, weight_decay: float = 3e-5,
                  batch_size: int = 16, batch_norm_momentum: float | None = 0.01, n_epochs: int = 10,
                  device: str = DEVICE, load_to_ram: bool = False,
-                 extra_augmentation: Optional[Callable] = transformations.transformations_for_training):
+                 extra_augmentation: Optional[Callable] = transformations.transformations_for_training,
+                 data_folder: str = "../../data/tensors_to_load"):
         self.lr = lr
         self.weight_decay = weight_decay
         self.batch_size = batch_size
@@ -137,6 +138,7 @@ class Trainer:
         self.device = device
         self.load_to_ram = load_to_ram
         self.extra_augmentation = extra_augmentation
+        self.data_folder = data_folder
 
     def get_optimizer_and_scheduler(
             self, parameters: Iterable[torch.nn.Parameter]
@@ -173,7 +175,8 @@ class Trainer:
         model = model.to(self.device)
 
         train_loader, test_loader = (data_processing.
-                                     get_dataloader(batch_size=self.batch_size,
+                                     get_dataloader(data_folder=self.data_folder,
+                                                    batch_size=self.batch_size,
                                                     load_to_ram=self.load_to_ram,
                                                     transform=self.extra_augmentation))
 
@@ -299,35 +302,6 @@ if __name__ == "__main__":
     generated_video = generator.generate_video_from_tensor(model, batch[:, :100], video_length=258)
     generated_video = transformations.unnormalize_image(generated_video)
     visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
-
-    # predictions = model(batch[:, :-1])
-    # predictions_unnormalized = transformations.unnormalize_image(predictions)
-    # batch_unnormalized = transformations.unnormalize_image(batch)
-    # visualizer.visualize_tensor_image(predictions_unnormalized[0][45])
-    # visualizer.visualize_tensor_image(batch_unnormalized[0][46])
-
-    # EXAMPLE CODE FOR AUTOENCODER TRAINING
-    # autoencoder_trainer = AutoEncoderTrainer(
-    #     n_epochs=100,
-    #     lr=1e-3,
-    #     batch_size=4,
-    #     batch_norm_momentum=0.1,
-    #     extra_augmentation=lambda image: transformations.transformations_for_training(image, crop_size=32)
-    # )
-    # args = model.ModelArgs()
-    # model = model.AutoEncoder(args).to(DEVICE)
-    # autoencoder_trainer.train(model)
-    #
-    # train_loader, test_loader = data_processing.get_dataloader(
-    #     batch_size=1,
-    #     transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=32)
-    # )
-    #
-    # model.eval()
-    # batch = next(iter(test_loader)).to(DEVICE)
-    # predictions = model(batch)
-    # predictions_unnormalized = transformations.unnormalize_image(predictions)
-    # visualizer.visualize_tensor_image(predictions_unnormalized[0][1])
 
 
 
