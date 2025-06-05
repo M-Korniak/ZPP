@@ -21,7 +21,6 @@ def test_load_experiment_data_to_tensor(mock_visualize, mock_transform):
         dummy_csv = os.path.join(temp_data, "dummy.csv")
         gif_file = os.path.join(temp_data, "experiment_1_fov_1.gif")
 
-        # Tworzymy DataFrame i zapisujemy jako CSV
         df = pd.DataFrame({
             'Exp_ID': [1] * 5,
             'Image_Metadata_Site': [1] * 5,
@@ -33,10 +32,10 @@ def test_load_experiment_data_to_tensor(mock_visualize, mock_transform):
         })
         df.to_csv(dummy_csv, index=False)
 
-        # Tworzymy pusty plik GIF, jeśli nie istnieje
+
         if not os.path.exists(gif_file):
             with open(gif_file, "wb") as f:
-                f.write(b"GIF89a")  # Minimalny nagłówek pliku GIF
+                f.write(b"GIF89a") 
 
         try:
             with mock.patch("src.data_processing.data_processing.utils.unpack_and_read", return_value=pd.read_csv(dummy_csv)):
@@ -52,13 +51,12 @@ def test_load_experiment_data_to_tensor(mock_visualize, mock_transform):
                 assert any(f.endswith(".pt") for f in files), "No .pt tensor file was saved."
 
         finally:
-            # Usuwamy plik GIF po teście
             if os.path.exists(gif_file):
                 os.remove(gif_file)
 
 
 def test_tensor_dataset_loading(tmp_path):
-    dummy_tensor = [torch.rand(258, 3, 256, 256)]  # poprawny format jako lista
+    dummy_tensor = [torch.rand(258, 3, 256, 256)] 
     file_path = tmp_path / "experiments_tensor_exp_1_fov_1.pt"
     torch.save(dummy_tensor, file_path)
 
