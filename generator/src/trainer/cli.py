@@ -72,7 +72,7 @@ def train_model():
         )
         model.eval().to(device)
         batch = next(iter(test_loader)).to(device)
-        generated_video = generator.generate_video_from_tensor(model, batch[:, :100], video_length=258)
+        generated_video = generator.generate_time_lapse_from_tensor(model, batch[:, :100], video_length=258)
         generated_video = transformations.unnormalize_image(generated_video)
         visualizer.visualize_tensor_images_as_gif(generated_video[0], path=args.generate_gif)
 

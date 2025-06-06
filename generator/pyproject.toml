@@ -51,4 +51,5 @@ packages = [
 process-tensor = "src.data_processing.data_processing:main"
 train-model = "src.trainer.cli:train_model"
 init-model = "src.model.cli:main"
-generate-cell-video = "src.rule_based_generator.cli:main"
+generate-time-lapse-rule-based = "src.rule_based_generator.cli:main"
+generate-time-lapse-autorergesive = "src.generator.cli:main"
