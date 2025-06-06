@@ -1,6 +1,6 @@
 # src/rule_based_generator/cli.py
 import argparse
-from .rule_based_generator import RuleBasedGenerator
+from .rule_based_generator import RuleBasedGenerator, STD_DEVIATIONS
 import src.utils.utils as utils
 import src.visualizer.visualizer as visualizer
 import pandas as pd
@@ -25,7 +25,7 @@ def main():
                        help='Generate visualization of the simulation')
     
     parser.add_argument('--mutation-type', type=str, default='WT',
-                    choices=list(RuleBasedGenerator.STD_DEVIATIONS.keys()),
+                    choices=list(STD_DEVIATIONS.keys()),
                     help='Mutation type to simulate (default: WT)')
 
     args = parser.parse_args()
