@@ -1,9 +1,8 @@
-# src/rule_based_generator/cli.py
 import argparse
 from .rule_based_generator import RuleBasedGenerator, STD_DEVIATIONS
 import src.utils.utils as utils
 import src.visualizer.visualizer as visualizer
-import pandas as pd
+
 
 def main():
     parser = argparse.ArgumentParser(description='Rule-based video generator for cell tracking simulations')
@@ -53,6 +52,7 @@ def main():
     # Visualize if requested
     if args.visualize:
         visualizer.visualize_simulation(video_data)
+
 
 if __name__ == "__main__":
     main()

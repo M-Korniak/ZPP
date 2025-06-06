@@ -1,9 +1,9 @@
-# src/model/cli.py
 import argparse
 import torch
 from .model import ModelArgs, SpatioTemporalTransformer, AutoEncoder
 import src.transformations.transformations as transformations
 import os
+
 
 def main():
     parser = argparse.ArgumentParser(description='Initialize and test a model with custom parameters')
@@ -99,6 +99,7 @@ def main():
         
         output = model(frames)
         print(f"Output shape: {output.shape}")
+
 
 if __name__ == "__main__":
     main()
