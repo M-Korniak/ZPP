@@ -22,7 +22,7 @@ def sample_generator():
         'objNuclei_Location_Center_Y': np.random.uniform(0, 100, 10),
         'other_column': np.random.randint(0, 5, 10)
     })
-    return RuleBasedGenerator(df)  # Tworzymy instancję klasy z przekazanym DataFrame
+    return RuleBasedGenerator(df)
 
 @pytest.fixture
 def sample_generator_100_records():
@@ -33,7 +33,7 @@ def sample_generator_100_records():
         'objNuclei_Location_Center_Y': np.random.uniform(0, 256, 100),
         'other_column': np.random.randint(0, 5, 100)
     })
-    return RuleBasedGenerator(df)  # Tworzymy instancję klasy z przekazanym DataFrame
+    return RuleBasedGenerator(df) 
 
 @pytest.fixture
 def sample_generator_extra_columns():
@@ -43,11 +43,11 @@ def sample_generator_extra_columns():
         'objNuclei_Location_Center_X': np.random.uniform(0, 100, 10),
         'objNuclei_Location_Center_Y': np.random.uniform(0, 100, 10),
         'other_column': np.random.randint(0, 5, 10),
-        'irrelevant_column_1': np.random.choice(['A', 'B', 'C'], 10),  # Kolumna tekstowa
-        'irrelevant_column_2': np.random.uniform(0, 1, 10),  # Kolumna numeryczna
-        'irrelevant_column_3': np.random.randint(100, 200, 10)  # Kolejna liczba całkowita
+        'irrelevant_column_1': np.random.choice(['A', 'B', 'C'], 10), 
+        'irrelevant_column_2': np.random.uniform(0, 1, 10),
+        'irrelevant_column_3': np.random.randint(100, 200, 10) 
     })
-    return RuleBasedGenerator(df)  # Tworzymy instancję klasy z rozszerzonym DataFrame
+    return RuleBasedGenerator(df)  
 
 @pytest.fixture
 def sample_data():
@@ -247,7 +247,6 @@ def test_generate_video_returns_dataframe(sample_initial_frame, sample_generator
     sample_generator.df_first_frame = sample_initial_frame
     sample_generator.number_of_frames = 10
 
-    # Mockowanie funkcji pomocniczych
     sample_generator.calculate_neighbors = MagicMock(return_value=torch.zeros((5, 5), dtype=torch.uint8, device=DEVICE))
     sample_generator.generate_next_ERK = MagicMock(return_value=sample_initial_frame.copy())
     sample_generator.generate_next_move = MagicMock(return_value=sample_initial_frame.copy())
