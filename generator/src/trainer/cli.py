@@ -1,4 +1,3 @@
-# src/trainer/cli.py
 import argparse
 import torch
 from .trainer import Trainer, AutoEncoderTrainer
@@ -8,6 +7,7 @@ import src.generator.generator as generator
 import src.transformations.transformations as transformations
 from .trainer import load_model, save_model  # Make sure these are imported
 import src.data_processing.data_processing as data_processing
+
 
 def train_model():
     parser = argparse.ArgumentParser(description='Train SpatioTemporal or AutoEncoder model')
@@ -85,6 +85,7 @@ def train_model():
         generated_video = generator.generate_video_from_tensor(model, batch[:, :100], video_length=258)
         generated_video = transformations.unnormalize_image(generated_video)
         visualizer.visualize_tensor_images_as_gif(generated_video[0], path=args.generate_gif)
+
 
 if __name__ == "__main__":
     train_model()

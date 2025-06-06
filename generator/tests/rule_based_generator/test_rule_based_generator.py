@@ -1,4 +1,4 @@
-from src.rule_based_generator.rule_based_generator import RuleBasedGeneratorGenerator
+from src.rule_based_generator.rule_based_generator import RuleBasedGenerator
 import pytest
 import numpy as np
 import pandas as pd
@@ -22,7 +22,7 @@ def sample_generator():
         'objNuclei_Location_Center_Y': np.random.uniform(0, 100, 10),
         'other_column': np.random.randint(0, 5, 10)
     })
-    return RuleBasedGeneratorGenerator(df)  # Tworzymy instancję klasy z przekazanym DataFrame
+    return RuleBasedGenerator(df)  # Tworzymy instancję klasy z przekazanym DataFrame
 
 @pytest.fixture
 def sample_generator_100_records():
@@ -33,7 +33,7 @@ def sample_generator_100_records():
         'objNuclei_Location_Center_Y': np.random.uniform(0, 256, 100),
         'other_column': np.random.randint(0, 5, 100)
     })
-    return RuleBasedGeneratorGenerator(df)  # Tworzymy instancję klasy z przekazanym DataFrame
+    return RuleBasedGenerator(df)  # Tworzymy instancję klasy z przekazanym DataFrame
 
 @pytest.fixture
 def sample_generator_extra_columns():
@@ -47,7 +47,7 @@ def sample_generator_extra_columns():
         'irrelevant_column_2': np.random.uniform(0, 1, 10),  # Kolumna numeryczna
         'irrelevant_column_3': np.random.randint(100, 200, 10)  # Kolejna liczba całkowita
     })
-    return RuleBasedGeneratorGenerator(df)  # Tworzymy instancję klasy z rozszerzonym DataFrame
+    return RuleBasedGenerator(df)  # Tworzymy instancję klasy z rozszerzonym DataFrame
 
 @pytest.fixture
 def sample_data():
