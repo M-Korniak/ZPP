@@ -44,7 +44,7 @@ def crop_to_field_of_view(image: torch.Tensor, upper_left: int = 73,
     - IndexError: If the image is too small for the crop dimensions.
     """
     print(image.shape)
-    _, _, _, height, width = image.shape  # Pobranie wymiarów obrazu
+    _, _, _, height, width = image.shape
 
     if height < lower_right or width < lower_left:
         raise IndexError("Image is too small to crop to the specified field of view.")
@@ -62,11 +62,11 @@ def normalize_image(image: torch.Tensor) -> torch.Tensor:
     Returns:
     - torch.Tensor: The normalized image tensor.
     """
-    # if image.ndim != 4:
-    #     raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
+    if image.ndim != 4:
+        raise ValueError("Input image tensor must have 4 dimensions")
     
-    # if image.shape[1] != 3:
-    #     raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
+    if image.shape[1] != 3:
+        raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
 
     mean = torch.tensor(MEANS, device=image.device).view(3, 1, 1)
     std = torch.tensor(STDS, device=image.device).view(3, 1, 1)
@@ -84,11 +84,11 @@ def unnormalize_image(image: torch.Tensor) -> torch.Tensor:
     Returns:
     - torch.Tensor: The unnormalized image tensor.
     """
-    # if image.ndim != 4:
-    #     raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
+    if image.ndim != 4:
+        raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
     
-    # if image.shape[1] != 3:
-    #     raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
+    if image.shape[1] != 3:
+        raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
     mean = torch.tensor(MEANS, device=image.device).view(3, 1, 1)
     std = torch.tensor(STDS, device=image.device).view(3, 1, 1)
     return image * std + mean

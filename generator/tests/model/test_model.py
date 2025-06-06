@@ -21,7 +21,6 @@ from torch import nn
 
 import src.model.model as model
 
-# Constants definiton
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 elif torch.backends.mps.is_available():
@@ -37,12 +36,12 @@ INITIAL = 2
 
 @dataclass
 class ModelArgs:
-    vocab_size: int = VOCAB_SIZE # Added!
+    vocab_size: int = VOCAB_SIZE
     
-    dim: int = 256  # Play to determine the best value
+    dim: int = 256 
     n_layers: int = 128
     n_heads: int = 8
-    multiple_of: int = 256  # make SwiGLU hidden layer size multiple of large power of 2
+    multiple_of: int = 256 
     norm_eps: float = 1e-5
     rope_theta: float = 21000
 
@@ -56,7 +55,6 @@ class ModelArgs:
     scaling_factor: int = 2
 
 
-# Modified inner transformer model defintion
 class InnerTransformer(nn.Module):
     """
     Transformer model with multiple model blocks.
@@ -73,26 +71,15 @@ class InnerTransformer(nn.Module):
     """
     def __init__(self, params: ModelArgs):
         super().__init__()
-        # Added : embedding
         self.embedding = torch.nn.Embedding(params.vocab_size, params.dim)
-        # -----------------
 
         self.transformer = model.Transformer(params)
-
-        # Added : final projection (into distribution over vocabulary)
         self.final_proj = torch.nn.Linear(params.dim, params.vocab_size)
-        # -----------------
 
     def forward(self, input_tensor: torch.Tensor, start_pos: int = 0):
-        # Added : embedding
         input_tensor = self.embedding(input_tensor) # (B, S) -> (B, S, dim)
-        # -----------------
-        
         h = self.transformer(input_tensor)
-        
-        # Added : final projection
         h = self.final_proj(h)
-        # -----------------
         return h
 
 # II. Adjusted trainer
@@ -133,7 +120,7 @@ class TransformerTrainer:
         self.batch_norm_momentum = batch_norm_momentum
         self.n_epochs = n_epochs
         self.device = device
-        self.extra_augmentation = extra_augmentation  # TODO: Add reasonable extra augmentation
+        self.extra_augmentation = extra_augmentation
 
     def get_optimizer_and_scheduler(
             self, parameters: Iterable[torch.nn.Parameter]
@@ -152,10 +139,8 @@ class TransformerTrainer:
         progress_bar = tqdm(enumerate(test_loader), desc="Evaluate")
         for i, (batch, y) in progress_bar:
             batch = batch.to(self.device)
-            #batch = transformations.transform_image_to_trainable_form(batch)
             predictions = model(batch[:, :-1])
 
-            #loss = self.compute_loss(predictions, batch[:, 1:])
             loss = F.cross_entropy(predictions.reshape(-1, predictions.size(-1)), batch[:, 1:].reshape(-1))
 
             total_loss += loss.item()
@@ -177,7 +162,6 @@ class TransformerTrainer:
         progress_bar = tqdm(enumerate(dataloader), desc="Evaluate")
         for i, (batch, y) in progress_bar:
             batch = batch.to(self.device)
-            #batch = transformations.transform_image_to_trainable_form(batch)
             model_out = model(batch[:, :-1])
             y = batch[:, 1:]
 
@@ -186,7 +170,6 @@ class TransformerTrainer:
             num_examples += model_out.shape[0] * model_out.shape[1]
 
         avg_acc = sum_acc / num_examples
-        # Added : logging the evaluated accuracy (after each training epoch)
         if logger is not None:
             logger.report_scalar(
                 title="Validation Accuracy", series="Inner Transformer", iteration=epoch, value=avg_acc
@@ -199,7 +182,6 @@ class TransformerTrainer:
         model = model.to(self.device)
 
         if self.batch_norm_momentum is not None:
-            # Default torch.nn.BatchNorm2D.momentum is 0.1, but it's often too high.
             for m in model.modules():
                 if isinstance(m, BATCH_NORM_TYPES):
                     m.momentum = self.batch_norm_momentum
@@ -245,8 +227,6 @@ class TransformerTrainer:
                 title="Average Epoch Loss", series="Inner Transformer", iteration=epoch, value=avg_loss
             )
 
-
-# III. Artificial data generation
 
 def generate_recursive(n_first, vocab_size, next_prob):
     assert 0 < vocab_size
@@ -324,7 +304,6 @@ def generate_dataset(gen_factory, seq_len, num_entries, exclude = []):
         generators.append(seq_gen)
         entries.append(seq)
     data = torch.tensor(entries, dtype=torch.long)
-    # I put data as both x and y due to the way data are handled in Trainer
     return torch.utils.data.TensorDataset(data, data), set(generators)
 
 def example_generator(gen):
@@ -350,23 +329,16 @@ TRAIN_LOADER = torch.utils.data.DataLoader(
 TEST_LOADER = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE)
 
 
-# IV. Training & evaluation
-
 def test_hyperparameters(dim, n_layers, n_heads, rope_theta, n_epochs, batch_size, lr, use_clearml):
-    # Optional: If use_clearml is True, set up ClearML
     if use_clearml:
         setup_clearml()
 
-    # Get the data loaders
     train_loader, test_loader = TRAIN_LOADER, TEST_LOADER
 
-    # Set up the model args from ModelArgs dataclass
     args = ModelArgs(dim=dim, n_layers=n_layers, n_heads=n_heads, rope_theta=rope_theta)
-    # Intialize the trainer and model
     model = InnerTransformer(args).to(DEVICE)
     trainer = TransformerTrainer(n_epochs=n_epochs, lr=lr)
 
-    # Create a new ClearML task for each run
     params = {
         'dim': dim,
         'n_layers': n_layers,
@@ -383,20 +355,16 @@ def test_hyperparameters(dim, n_layers, n_heads, rope_theta, n_epochs, batch_siz
             task_name=f'Run {n_epochs} - ' + ', '.join([f'{key}: {value}' for key, value in params.items()]),
             task_type=Task.TaskTypes.optimizer
         )
-        # Log hyperparameters for this task
         task.connect(params)
         logger = task.get_logger()
     else:
         logger = None
 
-    # Train the model
     trainer.train(model, train_loader, test_loader, logger=logger)
 
     if use_clearml:
-        # Close the experiment with this hiperparameters.
         task.close()
 
-# Define hyperparameter ranges
 dim_values = [32, 64, 128, 256]
 n_layers_values = [4, 8, 16, 32, 64]
 n_heads_values = [4, 8, 16, 32]
@@ -404,22 +372,19 @@ rope_theta_values = [100, 1000, 10000, 20000]
 n_epochs_values = [20]
 batch_size_values = [32, 64, 128]
 lr_values = [1e-2, 1e-3, 2e-4]
-use_clearml_values = [False] # Change to True to activate clearml logging!
+use_clearml_values = [False] 
 
-# Generate all combinations of hyperparameters
 combinations = product(
     dim_values, n_layers_values, n_heads_values, rope_theta_values,
     n_epochs_values, batch_size_values, lr_values, use_clearml_values
 )
 
-# Iterate through all combinations and run the test
 for i, (dim, n_layers, n_heads, rope_theta, n_epochs, batch_size, lr, use_clearml) in enumerate(combinations):
     print(f"Running combination {i + 1}:")
     print(f"  dim: {dim}, n_layers: {n_layers}, n_heads: {n_heads}, rope_theta: {rope_theta}")
     print(f"  n_epochs: {n_epochs}, batch_size: {batch_size}, lr: {lr}, use_clearml: {use_clearml}")
     print("-" * 50)
 
-    # Call the test function
     test_hyperparameters(dim, n_layers, n_heads, rope_theta, n_epochs, batch_size, lr, use_clearml)
 
     print("Test completed.\n")

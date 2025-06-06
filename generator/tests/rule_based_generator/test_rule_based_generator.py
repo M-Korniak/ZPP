@@ -252,7 +252,7 @@ def test_generate_video_returns_dataframe(sample_initial_frame, sample_generator
     sample_generator.generate_next_ERK = MagicMock(return_value=sample_initial_frame.copy())
     sample_generator.generate_next_move = MagicMock(return_value=sample_initial_frame.copy())
 
-    result = sample_generator.generate_video()
+    result = sample_generator.generate_time_lapse()
 
     assert isinstance(result, pd.DataFrame), "Function should return `pd.DataFrame`"
 
@@ -265,7 +265,7 @@ def test_generate_video_columns(sample_initial_frame, sample_generator):
     sample_generator.generate_next_ERK = MagicMock(return_value=sample_initial_frame.copy())
     sample_generator.generate_next_move = MagicMock(return_value=sample_initial_frame.copy())
 
-    result = sample_generator.generate_video()
+    result = sample_generator.generate_time_lapse()
 
     expected_columns = {'track_id', 'objNuclei_Location_Center_X', 'objNuclei_Location_Center_Y', 
                         'ERKKTR_ratio'}
@@ -281,7 +281,7 @@ def test_generate_video_frame_count(sample_initial_frame, sample_generator):
     sample_generator.generate_next_ERK = MagicMock(return_value=sample_initial_frame.copy())
     sample_generator.generate_next_move = MagicMock(return_value=sample_initial_frame.copy())
 
-    result = sample_generator.generate_video()
+    result = sample_generator.generate_time_lapse()
 
     num_tracks = len(sample_initial_frame)
     expected_rows = num_tracks * sample_generator.number_of_frames
@@ -296,7 +296,7 @@ def test_generate_video_track_id_integrity(sample_initial_frame, sample_generato
     sample_generator.generate_next_ERK = MagicMock(return_value=sample_initial_frame.copy())
     sample_generator.generate_next_move = MagicMock(return_value=sample_initial_frame.copy())
 
-    result = sample_generator.generate_video()
+    result = sample_generator.generate_time_lapse()
 
     grouped = result.groupby("track_id")
     assert all(len(group) == sample_generator.number_of_frames for _, group in grouped), "Not all track_id have the correct number of frames."
@@ -310,7 +310,7 @@ def test_generate_video_time_metadata(sample_initial_frame, sample_generator):
     sample_generator.generate_next_ERK = MagicMock(return_value=sample_initial_frame.copy())
     sample_generator.generate_next_move = MagicMock(return_value=sample_initial_frame.copy())
 
-    result = sample_generator.generate_video()
+    result = sample_generator.generate_time_lapse()
 
     unique_times = sorted(result["Image_Metadata_T"].unique())
     assert unique_times == list(range(sample_generator.number_of_frames)), "Incorrect Image_Metadata_T values."
@@ -335,7 +335,7 @@ def test_generate_video_changes_values(sample_initial_frame, sample_generator):
     sample_generator.generate_next_ERK = fake_next_ERK
     sample_generator.generate_next_move = fake_next_move
 
-    result = sample_generator.generate_video()
+    result = sample_generator.generate_time_lapse()
 
     assert result["objNuclei_Location_Center_X"].nunique() > len(sample_initial_frame), "X values do not change."
     assert result["objNuclei_Location_Center_Y"].nunique() > len(sample_initial_frame), "Y values do not change."

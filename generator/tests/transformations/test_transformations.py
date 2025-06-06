@@ -50,18 +50,18 @@ def test_load_gif_incorrect_format():
             load_gif("incorrect.gif")
 
 def test_crop_to_field_of_view_valid():
-    image = torch.randn(1, 3, 600, 800)
+    image = torch.randn(1, 3, 15, 600, 800)
     cropped_image = crop_to_field_of_view(image)
     
-    assert cropped_image.shape == (1, 3, 461, 495)
+    assert cropped_image.shape == (1, 3, 15, 461, 495)
 
 def test_crop_to_field_of_view_edge_case():
-    image = torch.randn(1, 3, 461 + 73, 495 + 101)
+    image = torch.randn(1, 3, 15, 461 + 73, 495 + 101)
     cropped_image = crop_to_field_of_view(image)
-    assert cropped_image.shape == (1, 3, 461, 495)
+    assert cropped_image.shape == (1, 3, 15, 461, 495)
 
 def test_crop_to_field_of_view_too_small():
-    image = torch.randn(1, 3, 400, 400)
+    image = torch.randn(1, 3, 15, 400, 400)
     
     with pytest.raises(IndexError):
         crop_to_field_of_view(image)
