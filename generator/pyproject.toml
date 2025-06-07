@@ -50,6 +50,5 @@ packages = [
 [project.scripts]
 process-tensor = "src.data_processing.data_processing:main"
 train-model = "src.trainer.cli:train_model"
-init-model = "src.model.cli:main"
 generate-time-lapse-rule-based = "src.rule_based_generator.cli:main"
 generate-time-lapse-autoregressive = "src.generator.cli:main"
