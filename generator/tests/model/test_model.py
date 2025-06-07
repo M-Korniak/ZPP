@@ -9,8 +9,6 @@ from itertools import product
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, List, Iterable
 from clearml import Logger, Task
-# uncomment if running in colab:
-# from google.colab import userdata
 from tqdm import tqdm
 
 from torch.utils.data import DataLoader
@@ -82,7 +80,6 @@ class InnerTransformer(nn.Module):
         h = self.final_proj(h)
         return h
 
-# II. Adjusted trainer
 
 BATCH_NORM_TYPES = (
     torch.nn.BatchNorm1d
@@ -95,12 +92,8 @@ BATCH_NORM_TYPES = (
 )
 
 def setup_clearml():
-    # Comment if running in colab:
     access_key = os.getenv('CLEARML_ACCESS_KEY')
     secret_key = os.getenv('CLEARML_SECRET_KEY')
-    # Uncomment if running in colab:
-    # access_key = userdata.get('CLEARML_ACCESS_KEY')
-    # secret_key = userdata.get('CLEARML_SECRET_KEY')
 
     Task.set_credentials(
         web_host='https://app.clear.ml',
@@ -206,12 +199,10 @@ class TransformerTrainer:
         progress_bar = tqdm(enumerate(train_loader), desc=f"Train epoch {epoch:>3}")
         for i, (batch, y) in progress_bar:
             batch = batch.to(self.device)
-            #batch = transformations.transform_image_to_trainable_form(batch)
 
             optimizer.zero_grad()
             predictions = model(batch[:, :-1])
 
-            #loss = self.compute_loss(predictions, batch[:, 1:])
             loss = F.cross_entropy(predictions.reshape(-1, predictions.size(-1)), batch[:, 1:].reshape(-1))
             loss.backward()
             optimizer.step()

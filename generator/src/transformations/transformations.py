@@ -24,7 +24,7 @@ def load_gif(path: str) -> torch.Tensor:
     frames = np.array([frame for frame in gif])
     frames = np.transpose(frames, (0, 3, 1, 2))
     tensor_frames = torch.tensor(frames, dtype=torch.float16)  # Shape: (S, C, H, W)
-    batched_tensor = tensor_frames.unsqueeze(0)  # Add batch dimension (B=1)
+    batched_tensor = tensor_frames.unsqueeze(0) 
     return batched_tensor
 
 

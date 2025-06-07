@@ -15,10 +15,10 @@ import src.transformations.transformations as transformations
 
 @dataclass
 class ModelArgs:
-    dim: int = 64  # Play to determine the best value
+    dim: int = 64
     n_layers: int = 64
     n_heads: int = 8
-    multiple_of: int = 64  # make SwiGLU hidden layer size multiple of large power of 2
+    multiple_of: int = 64 
     norm_eps: float = 1e-5
     rope_theta: float = 100.0
 

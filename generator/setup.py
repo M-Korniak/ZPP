@@ -1,4 +1,4 @@
-import setuptools # type: ignore
+import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="generator",
     version="0.0.1",
-    author="Zuz Kiczak, Michał Korniak, Michał Maszkowski, Adam Jaskuła",
+    author="Zuz Kiczak, Michał Korniak, Adam Jaskuła",
     author_email="mk448287@students.mimuw.edu.pl",
     description="A package for generating spatio-temporal cellular data",
     long_description=long_description,

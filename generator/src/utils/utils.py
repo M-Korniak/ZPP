@@ -14,11 +14,7 @@ def unpack_and_read(f_p=None) -> pd.DataFrame:
     - pd.DataFrame: A DataFrame containing the data from the CSV file.
     """
     if f_p is None:
-        file_id = "1xsDZF8PZUNNzYAVrfuNxGoLMhoEFgAuN"
-        url = f"https://drive.google.com/uc?id={file_id}"
-
-        f_p = "data.csv.gz"
-        gdown.download(url, f_p, quiet=False)
+        return pd.DataFrame()
 
     with gzip.open(f_p, 'rt') as f:
         df = pd.read_csv(f)
