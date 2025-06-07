@@ -87,7 +87,7 @@ def test_normalize_image_invalid_shape():
         normalize_image(image)
 
 def test_unnormalize_image_valid():
-    image = torch.randn(1, 3, 64, 64)
+    image = torch.randn(1, 258, 3, 16, 16)
     mean = torch.tensor(MEANS).view(3, 1, 1)
     std = torch.tensor(STDS).view(3, 1, 1)
     
@@ -98,7 +98,7 @@ def test_unnormalize_image_valid():
 
 def test_unnormalize_image_different_device():
     if torch.cuda.is_available():
-        image = torch.randn(1, 3, 64, 64, device="cuda")
+        image = torch.randn(1, 258, 3, 16, 16, device="cuda")
         unnormalized = unnormalize_image(image)
         assert unnormalized.device == image.device
 
