@@ -1,10 +1,10 @@
 import argparse
 import torch
-from video_generator import generate_time_lapse_from_tensor
+from src.generator.generator import generate_time_lapse_from_tensor
 from src.transformations.transformations import unnormalize_image, transformations_for_evaluation
 from src.data_processing.data_processing import get_dataloader
 from src.visualizer.visualizer import visualize_tensor_images_as_gif
-from src.trainer import load_model
+from src.trainer.trainer import load_model
 
 
 def main():
