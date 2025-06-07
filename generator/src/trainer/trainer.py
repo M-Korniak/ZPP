@@ -220,7 +220,7 @@ class AutoEncoderTrainer(Trainer):
                  batch_size: int = 16, batch_norm_momentum: float | None = 0.01, n_epochs: int = 10,
                  device: str = DEVICE,
                  extra_augmentation: Optional[Callable] = transformations.transformations_for_training):
-        super().__init__(lr, weight_decay, batch_size, batch_norm_momentum, n_epochs, device, extra_augmentation)
+        super().__init__(lr, weight_decay, batch_size, batch_norm_momentum, n_epochs, device, extra_augmentation, load_to_ram)
 
     def evaluate(self, model: torch.nn.Module, test_loader: DataLoader, epoch: int, logger: Logger = None):
         model.eval()

@@ -82,7 +82,7 @@ def main():
                 raise FileNotFoundError(f"GIF file not found: {args.gif_path}")
             frames = transformations.transform_gif_to_tensor(args.gif_path)
         else:
-            frames = torch.randn(1, 10, 3, 256, 256).to(device)  # (B, S, C, H, W)
+            frames = torch.randn(10, 3, 256, 256).to(device)  # (B, C, H, W)
         
         frames = transformations.transform_image_to_trainable_form(frames)
         print(f"\nInput shape: {frames.shape}")
