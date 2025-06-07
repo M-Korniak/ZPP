@@ -11,7 +11,6 @@ from src.transformations.transformations import (
     normalize_image,
     unnormalize_image,
     resize_image,
-    transform_image_to_trainable_form,
     custom_random_rotation,
     transformations_for_training,
     transformations_for_evaluation,
@@ -87,7 +86,7 @@ def test_normalize_image_invalid_shape():
         normalize_image(image)
 
 def test_unnormalize_image_valid():
-    image = torch.randn(1, 3, 64, 64)
+    image = torch.randn(1, 258, 3, 16, 16)
     mean = torch.tensor(MEANS).view(3, 1, 1)
     std = torch.tensor(STDS).view(3, 1, 1)
     
@@ -98,7 +97,7 @@ def test_unnormalize_image_valid():
 
 def test_unnormalize_image_different_device():
     if torch.cuda.is_available():
-        image = torch.randn(1, 3, 64, 64, device="cuda")
+        image = torch.randn(1, 258, 3, 16, 16, device="cuda")
         unnormalized = unnormalize_image(image)
         assert unnormalized.device == image.device
 
@@ -129,24 +128,8 @@ def test_resize_image_different_device():
         resized_image = resize_image(image, size=256)
         assert resized_image.device == image.device
 
-def test_transform_image_to_trainable_form_valid():
-    image = torch.randint(0, 256, (1, 3, 64, 64), dtype=torch.uint8)
-    transformed = transform_image_to_trainable_form(image)
-    
-    assert isinstance(transformed, torch.Tensor)
-    assert transformed.dtype == torch.float32
-    assert transformed.shape == image.shape
 
-def test_transform_image_to_trainable_form_invalid_shape():
-    image = torch.randint(0, 256, (1, 1, 64, 64), dtype=torch.uint8)  
-    with pytest.raises(ValueError):
-        transform_image_to_trainable_form(image)
 
-def test_transform_image_to_trainable_form_different_device():
-    if torch.cuda.is_available():
-        image = torch.randint(0, 256, (1, 3, 64, 64), dtype=torch.uint8, device="cuda")
-        transformed = transform_image_to_trainable_form(image)
-        assert transformed.device == image.device
 
 def test_custom_random_rotation():
     image = torch.randn(3, 64, 64)  

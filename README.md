@@ -1,11 +1,13 @@
 # Biomedical Data Generation Package
 
-This package was developed as part of a bachelor's thesis at the Faculty of Mathematics, Informatics, and Mechanics at the University of Warsaw. It enables the generation of biomedical data based on provided experimental data. By leveraging a transformer model and a heuristic generator, the package can produce data resembling real experimental results.
+This package was developed as part of a bachelor's thesis at the Faculty of Mathematics, Informatics, and Mechanics at the University of Warsaw. It enables the generation, preprocessing, and modeling of biomedical data from time-lapse microscopy experiments. It supports both rule-based (heuristic) simulation and training of the SpatioTemporalTransformer model for predictive video generation.
+
+It can be used either programmatically or via a command-line interface (CLI), with full support for integration with ClearML, automatic preprocessing, and visualization
 
 The input data must be supplied in DataFrames with specific column names, ensuring consistency in processing. The package offers three main pipelines:
 
 1. **Heuristic Data Generation** – Generates synthetic data based on predefined rules.  
-2. **Transformer-Based Model Training** – Trains a transformer model to predict the next frame in a dataset.  
+2. **Data-Based Model Training** – Trains a transformer model to predict the next frame in a dataset.  
 3. **Preprocessing Pipeline** – Converts DataFrames into tensors suitable for model training.
 
 ## Installation
@@ -13,12 +15,12 @@ The input data must be supplied in DataFrames with specific column names, ensuri
 To install the package, use the following command:
 
 ```bash
-pip install biomedical-data-gen
+pip install modelcellsignaling
 ```
 Alternatively, install from the source.
 ```bash
 git clone https://github.com/your-repo/biomedical-data-gen.git
-cd biomedical-data-gen
+cd ZPP/generator
 pip install -e .
 ```
 # Using the Heuristic Data Generator
@@ -50,13 +52,14 @@ The generator will use this data as the starting point and create new frames by 
 Before running the generator, load your initial dataset (`df_first_frame`). The dataset should be a Pandas DataFrame with specific column names.
 
 ```python
-df = utils.unpack_and_read("path/to/data.csv.gz")
+from src.rule_based_generator.rule_based_generator import RuleBasedGenerator
+import src.utils.utils
+import src.visualizer.visualizer
 
-df_first_frame = df[
-    (df["Image_Metadata_Site"] == 1) & 
-    (df["Exp_ID"] == 1) & 
-    (df["Image_Metadata_T"] == 0)
-][["track_id", "objNuclei_Location_Center_X", "objNuclei_Location_Center_Y", "ERKKTR_ratio", "Image_Metadata_T"]]
+df = utils.unpack_and_read("data.csv.gz")
+df_first_frame = df[(df['Image_Metadata_Site'] == 1) & (df['Exp_ID'] == 1) & (df['Image_Metadata_T'] == 0)][[
+    'track_id', 'objNuclei_Location_Center_X', 'objNuclei_Location_Center_Y', 'ERKKTR_ratio', 'Image_Metadata_T']]
+
 ```
 
 ### Step 2: Initialize and Run the Generator
@@ -64,8 +67,8 @@ df_first_frame = df[
 Once the initial dataset is loaded, initialize the Generator class with the first frame and specify the number of frames to simulate (default is 258). Then, generate the synthetic video data.
 
 ```python
-generator = Generator(df_first_frame=df_first_frame)
-video_data = generator.generate_video()
+generator = RuleBasedGenerator(df_first_frame=df_first_frame, mutation_type='PTEN_del')
+simulated_df = generator.generate_time_lapse()
 ```
 This will:
 
@@ -76,13 +79,35 @@ Generate a final dataset containing all frames.
 ### Step 3: Visualize the Generated Data
 To inspect the generated simulation, use the built-in visualizer.
 ```python
-visualizer.visualize_simulation(video_data)
+visualizer.visualize_simulation(simulated_df)
 ```
 The visualization will display how the nuclei move and how ERK values evolve over time.
 
+### Alternative CLI Usage
+```python
+generate-time-lapse-rule-based \
+    --input data.csv.gz \
+    --exp-id 1 \
+    --site 1 \
+    --frames 258 \
+    --mutation-type WT \
+    --output ./simulated_time_lapse.csv \
+    --visualize
+```
+
+### Supported Mutation Types
+
+The following mutation types are supported by the rule-based generator:
+
+- **WT** – Wild Type (no mutation)
+- **AKT1_E17K** – Mutation in AKT1 gene at position E17K
+- **PIK3CA_E545K** – Mutation in PIK3CA gene at position E545K
+- **PIK3CA_H1047R** – Mutation in PIK3CA gene at position H1047R
+- **PTEN_del** – Deletion of the PTEN gene
+
 ### Expected Output
 
-The output (`video_data`) is a Pandas DataFrame containing all generated frames.
+The output is a Pandas DataFrame containing all generated frames.
 
 #### Example Output Structure:
 
@@ -91,7 +116,7 @@ The output (`video_data`) is a Pandas DataFrame containing all generated frames.
 | 1        | 50.5                        | 120.1                       | 1.25         | 1                |
 | 2        | 55.1                        | 118.5                       | 1.38         | 1                |
 | 3        | 60.3                        | 122.7                       | 1.15         | 1                |
-| ...      | ...                          | ...                         | ...          | ...              |
+| ...      | ...                         | ...                         | ...          | ...              |
 
 Each row represents a nucleus at a specific time frame, with updated positions and ERK levels.
 
@@ -99,13 +124,13 @@ This approach allows for realistic simulation of cell movements and biochemical 
 
 ## Preprocessing Pipeline
 
-The preprocessing pipeline is responsible for converting raw experimental data (stored in Pandas DataFrames) into tensors that can be used for model training. This process involves the following steps:
+The preprocessing pipeline performs the following steps:
 
-1. **Loading and Cleaning Data** – The raw experimental dataset is loaded, and outliers in `ERKKTR_ratio` are clipped to a specific range.
-2. **Generating Visual Representations** – The tabular data is transformed into visual representations (GIFs) for each field of view.
-3. **Converting GIFs to Tensors** – The generated images are converted into tensor format, ensuring they have a consistent shape.
-4. **Saving Processed Data** – The tensors are saved in a structured format to be used later in model training.
-5. **Creating a Dataset and DataLoader** – The processed tensors are stored in a dataset and can be loaded efficiently using PyTorch's `DataLoader`.
+- Loads tabular CSV data and filters it by experiment.
+- Clips outlier `ERKKTR_ratio` values to a predefined range.
+- Generates GIF visualizations for each field of view (FOV).
+- Converts GIFs to PyTorch tensors with consistent shape.
+- Saves the resulting tensor files to disk for model training.
 
 ---
 
@@ -114,7 +139,7 @@ The preprocessing pipeline is responsible for converting raw experimental data (
 The function `load_experiment_data_to_tensor()` processes the raw dataset and converts it into tensors.
 
 ```python
-load_experiment_data_to_tensor(experiments=(1, 2, 3), maintain_experiment_visualization=False)
+load_experiment_data_to_tensor(experiments=(1, 2, 3))
 ```
 ### What Happens
 
@@ -167,6 +192,15 @@ dataset = TensorDataset("../../data/tensors_to_load/")
 # Access the first tensor in the dataset
 sample_tensor = dataset[0]  # Gets the first tensor from the dataset
 ```
+
+### Alternative CLI Usage
+```python
+process-tensor \
+    --load-data \
+    --data-path ./data.csv.gz \
+    --tensor-path ./data/tensors_to_load
+
+```
 ### Step 3: Create DataLoader for Training and Testing
 
 Now that the dataset is ready, the next step is to create `DataLoader` objects to load the data in batches for training and testing. `DataLoader` provides an efficient way to load and shuffle the data.
@@ -199,7 +233,7 @@ my_tensor = torch.load("../../data/tensors_to_load/experiments_tensor_exp_1_fov_
 visualizer.visualize_tensor_image(my_tensor[0][0])
 ```
 
-# SpatioTemporal Transformer - Next Frame Generation
+# SpatioTemporalTransformer Usage
 
 ## Description
 
@@ -228,44 +262,69 @@ print(frames.shape)
 Once you have prepared your input data, the next step is to initialize the `SpatioTemporalTransformer` model. To do this, you need to define the model parameters and then create the model instance. Here's how you can do that:
 
 ```python
-from model import SpatioTemporalTransformer, ModelArgs
+from src.model.model import SpatioTemporalTransformer, ModelArgs
+from src.trainer.trainer import Trainer, save_model
+import src.transformations.transformations as tf
 
-# Initialize the model arguments
 args = ModelArgs()
+model = SpatioTemporalTransformer(args).cuda()
+trainer = Trainer(n_epochs=100, batch_size=4,
+                  extra_augmentation=tf.transformations_for_training)
+trainer.train(model)
+save_model(model, args, "model.pth")
 
-# Create the SpatioTemporalTransformer model
-model = SpatioTemporalTransformer(args)
-
-# Pass the prepared input data (frames) to the model
-output = model(frames)
-
-# Print the shape of the generated output to verify
-print(output.shape)
 ```
 
 ### 3. Generate the Next Frame
 
 After initializing the model and passing the input frames to it, the next step is to generate the subsequent frame. This is done by feeding the prepared input tensor to the model, which processes the data and outputs the next frame in the sequence. 
 
-The generated output will be in the form of a tensor that represents the next frame of the video.
+The generated output will be in the form of a tensor that represents the next frames of the video.
 
-Here’s how you generate the next frame:
+Here’s how you generate the next frames:
 
 ```python
-# Generate the next frame by passing the input tensor to the model
-next_frame = model(frames)
+train_loader, test_loader = data_processing.get_dataloader(
+    data_folder=args.data_folder,
+    batch_size=1,
+    transform=lambda image: transformations.transformations_for_evaluation(image, crop_size=args.crop_size)
+)
 
-# Print the shape of the generated next frame to verify
-print(next_frame.shape)
+model.eval().to(device)
+batch = next(iter(test_loader)).to(device)
+generated_time_lapse = generator.generate_time_lapse_from_tensor(model, batch[:, :100], video_length=258)
+generated_time_lapse = transformations.unnormalize_image(generated_video)
+visualizer.visualize_tensor_images_as_gif(generated_video[0], path=args.generate_gif)
 
-# Optionally, transform the output back into an image or frame format
-# Example transformation (depends on your implementation):
-next_frame_image = transformations.tensor_to_image(next_frame)
+```
+### Alternative CLI Usage
+```python
+train-model \
+    --model-type transformer \
+    --epochs 200 \
+    --lr 0.002 \
+    --batch-size 4 \
+    --crop-size 16 \
+    --save-model ./model.pth \
+    --generate-gif ./example_output.gif
 
-# Display or save the generated frame
-# For example, display the frame using a library like PIL or OpenCV
-from PIL import Image
-Image.fromarray(next_frame_image).show()
+```
+# Load Pretrained Model
+There is also a possibility to load pretrainded model. It can be done via CLI:
+```python
+load-model \
+    --model-path model.pth \
+    --model-type SpatioTemporalTransformer \
+    --device cuda
+
+```
+and via Python:
+```python
+from src.trainer.trainer import load_model
+
+model = load_model("model.pth", "SpatioTemporalTransformer", 
+                   torch.device("cuda"))
+model.eval()
 ```
 
 ## Contributing

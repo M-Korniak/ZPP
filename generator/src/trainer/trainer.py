@@ -55,10 +55,8 @@ def save_model(trained_model: torch.nn.Module, args: ModelArgs, save_path: str) 
         args (model.ModelArgs): The hyperparameters.
         save_path (str): Path to save the model parameters and hyperparameters.
     """
-    # Ensure directory exists
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    # Save both the model's state_dict and the hyperparameters
     torch.save({
         'params': trained_model.state_dict(),
         'hyperparams': asdict(args)
@@ -76,14 +74,11 @@ def load_model(load_path: str, model_type: str, device: torch.device) -> torch.n
     Returns:
         torch.nn.Module: The model with loaded parameters.
     """
-    # Load the saved arguments
     checkpoint = torch.load(load_path, map_location=device)
     params = checkpoint['params']
-    # Rebuild ModelArgs from the dictionary
     hyperparams_dict = checkpoint['hyperparams']
     hyperparams = ModelArgs(**hyperparams_dict)
 
-    # Create a new model instance with loaded hyperparams
     if model_type == 'AutoEncoder':
         trained_model = model.AutoEncoder(hyperparams).to(device)
 
@@ -181,7 +176,6 @@ class Trainer:
                                                     transform=self.extra_augmentation))
 
         if self.batch_norm_momentum is not None:
-            # Default torch.nn.BatchNorm2D.momentum is 0.1, but it's often too high.
             for m in model.modules():
                 if isinstance(m, BATCH_NORM_TYPES):
                     m.momentum = self.batch_norm_momentum
@@ -226,7 +220,7 @@ class AutoEncoderTrainer(Trainer):
                  batch_size: int = 16, batch_norm_momentum: float | None = 0.01, n_epochs: int = 10,
                  device: str = DEVICE,
                  extra_augmentation: Optional[Callable] = transformations.transformations_for_training):
-        super().__init__(lr, weight_decay, batch_size, batch_norm_momentum, n_epochs, device, extra_augmentation)
+        super().__init__(lr, weight_decay, batch_size, batch_norm_momentum, n_epochs, device, extra_augmentation, load_to_ram)
 
     def evaluate(self, model: torch.nn.Module, test_loader: DataLoader, epoch: int, logger: Logger = None):
         model.eval()
@@ -278,7 +272,6 @@ class AutoEncoderTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    # EXAMPLE CODE FOR TRANSFORMER TRAINING
     trainer = Trainer(
         n_epochs=100,
         lr=2e-3,
@@ -289,9 +282,7 @@ if __name__ == "__main__":
     )
     args = model.ModelArgs()
     model = model.SpatioTemporalTransformer(args).to(DEVICE)
-    # model = load_model("../../data/model/saved_model64_200_alternative.pth", 'SpatioTemporalTransformer', DEVICE)
     trainer.train(model)
-    # save_model(model, model.args, "../../data/model/saved_model16.pth")
 
     train_loader, test_loader = data_processing.get_dataloader(
         batch_size=1,
@@ -299,7 +290,7 @@ if __name__ == "__main__":
     )
     model.eval().to(DEVICE)
     batch = next(iter(test_loader)).to(DEVICE)
-    generated_video = generator.generate_video_from_tensor(model, batch[:, :100], video_length=258)
+    generated_video = generator.generate_time_lapse_from_tensor(model, batch[:, :100], video_length=258)
     generated_video = transformations.unnormalize_image(generated_video)
     visualizer.visualize_tensor_images_as_gif(generated_video[0], path="../../data/animation.gif")
 

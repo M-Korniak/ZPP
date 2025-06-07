@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 
 @torch.no_grad()
-def generate_video_from_tensor(model: torch.nn.Module, input_frames: torch.tensor,
+def generate_time_lapse_from_tensor(model: torch.nn.Module, input_frames: torch.tensor,
                                video_length: int = 258) -> torch.tensor:
     """
     Generates a video from a given tensor

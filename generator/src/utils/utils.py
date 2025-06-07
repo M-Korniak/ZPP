@@ -1,25 +1,26 @@
+import os
 import gzip
 import pandas as pd
-import gdown
 
-
-def unpack_and_read(f_p=None) -> pd.DataFrame:
+def unpack_and_read(f_p: str = None) -> pd.DataFrame:
     """
-    Unpacks and reads a gzipped CSV file into a Pandas DataFrame.
+    Reads a gzipped CSV file into a Pandas DataFrame.
+    If `f_p` is None, returns an empty DataFrame.
 
     Args:
-    - f_p (str): The file path to the gzipped CSV file. Defaults to a sample file. If None, downloads the sample file.
+        f_p (str): Path to the .csv.gz file.
 
     Returns:
-    - pd.DataFrame: A DataFrame containing the data from the CSV file.
+        pd.DataFrame: The loaded DataFrame.
     """
     if f_p is None:
-        file_id = "1xsDZF8PZUNNzYAVrfuNxGoLMhoEFgAuN"
-        url = f"https://drive.google.com/uc?id={file_id}"
+        return pd.DataFrame()
 
-        f_p = "data.csv.gz"
-        gdown.download(url, f_p, quiet=False)
+    if not os.path.exists(f_p):
+        raise FileNotFoundError(f"File not found: {f_p}")
 
-    with gzip.open(f_p, 'rt') as f:
-        df = pd.read_csv(f)
-    return df
+    if f_p.endswith('.gz'):
+        with gzip.open(f_p, 'rt', encoding='utf-8') as f:
+            return pd.read_csv(f)
+    else:
+        return pd.read_csv(f_p)

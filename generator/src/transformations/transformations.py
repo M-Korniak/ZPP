@@ -24,7 +24,7 @@ def load_gif(path: str) -> torch.Tensor:
     frames = np.array([frame for frame in gif])
     frames = np.transpose(frames, (0, 3, 1, 2))
     tensor_frames = torch.tensor(frames, dtype=torch.float16)  # Shape: (S, C, H, W)
-    batched_tensor = tensor_frames.unsqueeze(0)  # Add batch dimension (B=1)
+    batched_tensor = tensor_frames.unsqueeze(0) 
     return batched_tensor
 
 
@@ -84,11 +84,12 @@ def unnormalize_image(image: torch.Tensor) -> torch.Tensor:
     Returns:
     - torch.Tensor: The unnormalized image tensor.
     """
-    if image.ndim != 4:
-        raise ValueError("Input image tensor must have 4 dimensions (B, C, H, W).")
+    if image.ndim != 5:
+        raise ValueError("Input image tensor must have 5 dimensions")
     
-    if image.shape[1] != 3:
+    if image.shape[2] != 3:
         raise ValueError("Input image tensor must have exactly 3 channels (C=3).")
+
     mean = torch.tensor(MEANS, device=image.device).view(3, 1, 1)
     std = torch.tensor(STDS, device=image.device).view(3, 1, 1)
     return image * std + mean
