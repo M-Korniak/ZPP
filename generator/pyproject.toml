@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modelcellsignaling"
-version = "0.1.3"
+version = "0.1.6"
 authors = [
     {name = "Adam Jaskuła", email = "aj429467@students.mimuw.edu.pl"},
     {name = "Michał Korniak", email = "mk448287@students.mimuw.edu.pl"},
