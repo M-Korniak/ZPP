@@ -25,6 +25,7 @@ def main():
                     choices=list(STD_DEVIATIONS.keys()),
                     help='Mutation type to simulate (default: WT)')
     parser.add_argument('--save-path', type=str, default="../../data/simulation.gif", help="File path to save the visualization")
+    parser.add_argument('--temp-frames-dir', type=str, default='./data/temp_frames', help='Directory to store temporary frames')
     args = parser.parse_args()
 
     df = utils.unpack_and_read(args.input)
@@ -46,7 +47,7 @@ def main():
     
     if args.visualize:
 
-        visualizer.visualize_simulation(simulation=video_data, path=args.save_path)
+        visualizer.visualize_simulation(simulation=video_data, path=args.save_path, temp_frames_dir=args.temp_frames_dir)
 
 
 if __name__ == "__main__":
