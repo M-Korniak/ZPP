@@ -9,7 +9,7 @@ from src.trainer.trainer import load_model
 
 def main():
     parser = argparse.ArgumentParser(description="Generate video using a pretrained model")
-    parser.add_argument('--model-path', type=str, required=True, help='Path to the trained model')
+    parser.add_argument('--model-path', type=str, default='trained-models/saved_model64_200_alternative.pth', required=True, help='Path to the trained model')
     parser.add_argument('--model-type', type=str, choices=['transformer', 'autoencoder'], required=True, help='Model type')
     parser.add_argument('--data-folder', type=str, required=True, help='Path to the dataset folder')
     parser.add_argument('--output-gif', type=str, required=True, help='Output path for the GIF')
