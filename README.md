@@ -328,6 +328,18 @@ model = load_model("model.pth", "SpatioTemporalTransformer",
 model.eval()
 ```
 
+# Autoregresive generation
+After preprocessing data, and training the model, autoregressive generation can be performed:
+```python
+generate-time-lapse-autoregressive \
+  --model-path models/checkpoint.pth \
+  --model-type transformer \
+  --data-folder ./data/test_dataset \
+  --output-gif ./results/generated_video.gif \
+  --video-length 150 \
+  --crop-size 16
+```
+
 ## Contributing
 Feel free to open issues or submit pull requests to improve the package.
 ## License
