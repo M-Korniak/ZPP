@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--output-gif', type=str, required=True, help='Output path for the GIF')
     parser.add_argument('--video-length', type=int, default=258, help='Length of the generated video')
     parser.add_argument('--crop-size', type=int, default=16, help='Crop size used during transformation')
+    parser.add_argument('--start-timestamp', type=int, default=100, help='Number of frames used as input for generation')
 
     args = parser.parse_args()
 
@@ -32,7 +33,7 @@ def main():
     )
 
     batch = next(iter(test_loader)).to(device)
-    input_frames = batch[:, :100]
+    input_frames = batch[:, :args.start_timestamp]
 
     generated_video = generate_time_lapse_from_tensor(model, input_frames, video_length=args.video_length)
     generated_video = unnormalize_image(generated_video)

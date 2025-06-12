@@ -338,6 +338,7 @@ generate-time-lapse-autoregressive \
   --output-gif ./results/generated_video.gif \
   --video-length 150 \
   --crop-size 16
+  --start-timestamp 100
 ```
 
 ## Contributing
