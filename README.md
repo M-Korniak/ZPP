@@ -337,7 +337,7 @@ generate-time-lapse-autoregressive \
   --data-folder ./data/test_dataset \
   --output-gif ./results/generated_video.gif \
   --video-length 150 \
-  --crop-size 16
+  --crop-size 16 \
   --start-timestamp 100
 ```
 
