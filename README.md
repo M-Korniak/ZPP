@@ -92,7 +92,8 @@ generate-time-lapse-rule-based \
     --frames 258 \
     --mutation-type WT \
     --output ./simulated_time_lapse.csv \
-    --visualize
+    --visualize \
+    --save-path
 ```
 
 ### Supported Mutation Types

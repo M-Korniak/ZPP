@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--mutation-type', type=str, default='WT',
                     choices=list(STD_DEVIATIONS.keys()),
                     help='Mutation type to simulate (default: WT)')
-
+    parser.add_argument('--save-path', type=str, default="../../data/simulation.gif", help="File path to save the visualization")
     args = parser.parse_args()
 
     df = utils.unpack_and_read(args.input)
@@ -45,7 +45,8 @@ def main():
         print(f"Saved generated video to {args.output}")
     
     if args.visualize:
-        visualizer.visualize_simulation(video_data)
+
+        visualizer.visualize_simulation(simulation=video_data, path=args.save_path)
 
 
 if __name__ == "__main__":
