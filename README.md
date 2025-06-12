@@ -92,7 +92,8 @@ generate-time-lapse-rule-based \
     --frames 258 \
     --mutation-type WT \
     --output ./simulated_time_lapse.csv \
-    --visualize
+    --visualize \
+    --save-path
 ```
 
 ### Supported Mutation Types
@@ -325,6 +326,19 @@ from src.trainer.trainer import load_model
 model = load_model("model.pth", "SpatioTemporalTransformer", 
                    torch.device("cuda"))
 model.eval()
+```
+
+# Autoregresive generation
+After preprocessing data, and training the model, autoregressive generation can be performed:
+```python
+generate-time-lapse-autoregressive \
+  --model-path models/checkpoint.pth \
+  --model-type transformer \
+  --data-folder ./data/test_dataset \
+  --output-gif ./results/generated_video.gif \
+  --video-length 150 \
+  --crop-size 16 \
+  --start-timestamp 100
 ```
 
 ## Contributing
